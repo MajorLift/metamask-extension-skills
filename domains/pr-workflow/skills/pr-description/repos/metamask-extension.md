@@ -20,7 +20,7 @@ Required sections (do not omit):
 
 ```
 ### Changed
-- Fixed cascade amplification in selector layer, reducing re-render count by 80% on home page
+- Fixed render cascade in selector layer, reducing re-render count by 80% on home page
 ```
 
 Categories: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.

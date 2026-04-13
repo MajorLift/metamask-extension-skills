@@ -1,6 +1,6 @@
 ---
 name: metrametrics-identity
-domain: platform
+domain: analytics
 description: isOptIn:true unconditionally strips user identity in MetaMetricsController — always sends as anonymous ID
 ---
 

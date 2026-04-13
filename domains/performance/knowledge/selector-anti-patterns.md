@@ -1,7 +1,7 @@
 ---
 name: selector-anti-patterns
 domain: performance
-description: Five Redux selector patterns that cause cascade amplification — detection and fixes
+description: Five Redux selector patterns that that break selector memoization and cause render cascades
 ---
 
 # Selector Anti-Patterns

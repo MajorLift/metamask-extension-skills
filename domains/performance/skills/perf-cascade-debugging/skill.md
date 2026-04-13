@@ -1,8 +1,9 @@
 ---
 name: perf-cascade-debugging
-description: Diagnose and fix React+Redux render cascade amplification
+description: Diagnose and fix React+Redux render cascades
 requires:
-  - cascade-amplification
+  - render-cascade
+  - selector-anti-patterns
 ---
 
 # Cascade Debugging

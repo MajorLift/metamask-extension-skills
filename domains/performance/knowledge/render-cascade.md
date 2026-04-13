@@ -1,10 +1,10 @@
 ---
-name: cascade-amplification
+name: render-cascade
 domain: performance
 description: React+Redux render cascade failure mode — single state change triggers multiple re-render cycles
 ---
 
-# Cascade Amplification
+# Render Cascade
 
 Single state change → broken selector returns new reference → `useSelector` detects "change" → parent re-renders all children → children trigger more selectors → cycle repeats 5+ times before stabilizing.
 
