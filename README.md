@@ -21,12 +21,13 @@ tools/
 
 | Domain | Skills | Knowledge |
 |---|---|---|
-| `ai-collaboration` | `diagnose-before-acting`, `evaluate-before-agreeing`, `specifications-as-guardrails`, `understand-before-acting` | `ai-failure-modes` |
-| `coding` | `search-before-write` | `context-breaking-changes` |
-| `performance` | `perf-cascade-debugging` | `cascade-amplification`, `selector-anti-patterns`, `web-vitals-instrumentation` |
-| `platform` | `extension-errors-debugging`, `extension-lifecycle-assumptions` | `extension-architecture`, `metrametrics-identity`, `mv3-service-worker`, `segment-governance` |
-| `pr-workflow` | `pr-description`, `commit-discipline` | — |
-| `testing` | — | `benchmark-methodology` |
+| `ai-collaboration` | `specifications-as-guardrails`, `understand-before-acting` | — |
+| `analytics` | `analytics-instrumentation`, `sentry-mcp-queries` | `metrametrics-identity`, `segment-governance` |
+| `coding` | `context-refactoring`, `search-before-write` | — |
+| `performance` | `perf-cascade-debugging` | `render-cascade`, `selector-anti-patterns` |
+| `platform` | `extension-errors-debugging`, `extension-lifecycle-assumptions` | `extension-architecture`, `mv3-service-worker` |
+| `pr-workflow` | `commit-discipline`, `pr-description` | — |
+| `testing` | `benchmark-design` | — |
 
 ## Install
 
