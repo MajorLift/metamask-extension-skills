@@ -53,7 +53,6 @@ grep -rn "isOptIn: true" app/scripts/ ui/ --include="*.ts" --include="*.tsx"
 
 | Issue | Status | Impact |
 |-------|--------|--------|
-| #6838 Fix trace context propagation | In progress | Manual spans appear as siblings of pageload |
 | #6858 Sentry SDK v8 → v10 upgrade | Planned | Improves OTel v2 support |
 | #6733 Wallet size tags on 10+ traces | Planned | Required for power user segmentation |
 

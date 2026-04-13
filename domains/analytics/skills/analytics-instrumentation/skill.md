@@ -23,7 +23,7 @@ requires:
 
 1. **Register a `TraceName` entry** before writing any span code.
 2. **Use `trace()` from `shared/lib/trace.ts`**, not raw `Sentry.startSpan()`. The wrapper handles cross-process context serialization.
-3. **Inherit parent automatically** — when no `parentContext` is provided, `trace()` should inherit from `Sentry.getActiveSpan()`. If it doesn't (known bug — #6838), the span appears as a sibling of `pageload` instead of a child.
+3. **Inherit parent automatically** — when no `parentContext` is provided, `trace()` inherits from `Sentry.getActiveSpan()`, making the new span a child of the active `pageload` span.
 4. **Add wallet size tags** to any new trace that runs on high-traffic paths:
 
    ```typescript
@@ -48,10 +48,6 @@ trace({ name: TraceName.MyOperation, parentContext: context }, async () => { ...
 ```
 
 Without propagation: Sentry shows disconnected operations. With propagation: complete tree from user action to RPC call.
-
-### Known Issue: Trace Context Propagation (#6838)
-
-Manual traces created via `trace()` currently appear as siblings of `pageload`, not children. Root cause: no parent inheritance from `Sentry.getActiveSpan()`. Fix pending. When adding new spans, note this limitation — trace hierarchy may not render correctly in Sentry until the fix ships.
 
 ### Updating a Span
 
