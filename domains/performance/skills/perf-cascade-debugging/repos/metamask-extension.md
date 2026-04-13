@@ -23,7 +23,7 @@ yarn test:unit 2>&1 | grep -c "result function returned its own inputs"
 
 ## Selector Creators
 
-`shared/modules/selectors/selector-creators.ts`
+`shared/lib/selectors/selector-creators.ts`
 
 | Creator | Use Case |
 |---------|----------|
@@ -37,13 +37,6 @@ yarn test:unit 2>&1 | grep -c "result function returned its own inputs"
 | Content | Path |
 |---------|------|
 | UI selectors | `ui/selectors/` |
-| Selector creators | `shared/modules/selectors/selector-creators.ts` |
+| Selector creators | `shared/lib/selectors/selector-creators.ts` |
 | Controller state shape | `app/scripts/metamask-controller.js` |
 
-## January 2026 Audit Baselines
-
-| Finding | Count |
-|---------|-------|
-| Identity selector warnings in CI (`result function returned its own inputs`) | 1,163 |
-| `createDeepEqualSelector` usages (most unnecessary) | 129 |
-| O(n) `.find()` calls in selectors | 33 |

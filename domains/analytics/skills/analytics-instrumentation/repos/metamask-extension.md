@@ -8,7 +8,7 @@ parent: analytics-instrumentation
 | Content | Path |
 |---------|------|
 | Sentry trace wrapper | `shared/lib/trace.ts` |
-| Trace name enum | `shared/constants/traces.ts` → `TraceName` |
+| Trace name enum | `shared/lib/trace.ts` → `TraceName` |
 | MetaMetrics controller | `app/scripts/controllers/metametrics-controller.ts` |
 | Event enum | `shared/constants/metametrics.ts` → `MetaMetricsEventName` |
 | Sentry setup + sample rate | `app/scripts/lib/setupSentry.js` → `getTracesSampleRate()` |

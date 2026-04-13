@@ -50,18 +50,10 @@ const secondsOfDay = +match[1] * 3600 + +match[2] * 60 + +match[3];
 
 ## Adding Metrics
 
-Extend `collectMetrics()` in `test/e2e/webdriver/driver.js`:
+Extend `collectMetrics()` in `test/e2e/webdriver/driver.js` and register the metric key in `test/e2e/benchmarks/utils/constants.ts` → `ALL_METRICS`.
 
-```javascript
-// TBT via Long Tasks
-const longTasks = performance.getEntriesByType('longtask');
-results.tbt = longTasks.reduce((sum, t) => sum + Math.max(0, t.duration - 50), 0);
-
-// LCP
-results.lcp = performance.getEntriesByType('largest-contentful-paint').pop()?.startTime || 0;
-```
-
-Register in `test/e2e/benchmarks/constants.ts` → `ALL_METRICS`. No `stateHooks` needed for Performance API metrics.
+- **Performance API metrics** (paint, navigation timing): collect directly inside `collectMetrics()` via `window.performance.getEntriesByType(...)`.
+- **Long Task / TBT metrics**: already wired — `collectMetrics()` reads `window.stateHooks.getLongTaskMetricsWithTBT()`. Adding new long-task-derived metrics requires extending the `stateHooks` observer, not the driver.
 
 ## Common Pitfalls
 
