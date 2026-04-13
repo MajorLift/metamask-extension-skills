@@ -1,8 +1,6 @@
 ---
 name: understand-before-acting
 description: Before editing or committing to a direction, verify purpose, audience, context, objective, and constraints
-requires:
-  - ai-failure-modes
 ---
 
 # Understand Before Acting
