@@ -19,13 +19,14 @@ tools/
 
 ## Domains
 
-| Domain | Content |
-|---|---|
-| `coding` | TypeScript safety, refactoring patterns, code quality |
-| `platform` | Extension architecture — background/UI boundary, MV3, context isolation, build types |
-| `performance` | Cascade debugging, state management optimization, benchmarking |
-| `testing` | E2E fixtures, performance testing |
-| `pr-workflow` | PR descriptions, changelogs, commit discipline, ticket workflow |
+| Domain | Skills | Knowledge |
+|---|---|---|
+| `ai-collaboration` | `diagnose-before-acting`, `evaluate-before-agreeing`, `specifications-as-guardrails`, `understand-before-acting` | `ai-failure-modes` |
+| `coding` | `search-before-write` | `context-breaking-changes` |
+| `performance` | `perf-cascade-debugging` | `cascade-amplification`, `selector-anti-patterns`, `web-vitals-instrumentation` |
+| `platform` | `extension-errors-debugging`, `extension-lifecycle-assumptions` | `extension-architecture`, `metrametrics-identity`, `mv3-service-worker`, `segment-governance` |
+| `pr-workflow` | `pr-description`, `commit-discipline` | — |
+| `testing` | — | `benchmark-methodology` |
 
 ## Install
 
