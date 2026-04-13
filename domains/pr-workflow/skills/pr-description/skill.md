@@ -1,4 +1,5 @@
 ---
+maturity: experimental
 name: pr-description
 description: Write PR descriptions that convey intent and impact, not diff inventory
 ---

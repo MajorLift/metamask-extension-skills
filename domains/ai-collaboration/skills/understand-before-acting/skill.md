@@ -1,4 +1,5 @@
 ---
+maturity: experimental
 name: understand-before-acting
 description: Use available information before editing, when blocked, or when asked to agree — three failure modes with one root cause
 ---

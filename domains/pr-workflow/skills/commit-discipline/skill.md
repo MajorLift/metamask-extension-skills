@@ -1,4 +1,5 @@
 ---
+maturity: experimental
 name: commit-discipline
 description: Atomic commits, granular commit chain construction, and pre-push lint discipline
 ---

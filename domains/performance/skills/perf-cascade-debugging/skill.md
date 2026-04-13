@@ -1,4 +1,5 @@
 ---
+maturity: experimental
 name: perf-cascade-debugging
 description: Diagnose and fix React+Redux render cascades
 requires:

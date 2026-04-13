@@ -1,4 +1,5 @@
 ---
+maturity: experimental
 name: specifications-as-guardrails
 description: Treat failing automated checks as signals to investigate, not obstacles to remove
 ---

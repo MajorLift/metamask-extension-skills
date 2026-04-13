@@ -1,4 +1,5 @@
 ---
+maturity: experimental
 name: sentry-mcp-queries
 description: Query Sentry via MCP tools — error triage, tag distribution analysis, volume estimation, replay and profile retrieval
 ---

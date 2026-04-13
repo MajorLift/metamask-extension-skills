@@ -1,4 +1,5 @@
 ---
+maturity: experimental
 name: extension-lifecycle-assumptions
 description: Verify platform lifecycle events before assuming they cause application-level side effects
 requires:

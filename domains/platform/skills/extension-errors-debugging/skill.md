@@ -1,4 +1,5 @@
 ---
+maturity: experimental
 name: extension-errors-debugging
 description: Diagnose browser extension errors — MV3 vs MV2, background/UI context, error tagging
 requires:

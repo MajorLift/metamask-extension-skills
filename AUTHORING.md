@@ -23,6 +23,7 @@ Every `.md` file starts with a frontmatter block between `---` markers.
 |---|---|---|
 | `name` | yes | Skill identifier |
 | `description` | yes | One-line summary |
+| `maturity` | yes | `experimental` \| `stable` \| `deprecated` — install.sh syncs `stable` by default |
 | `requires` | no | List of knowledge file names to inline |
 
 ### Knowledge files

@@ -1,4 +1,5 @@
 ---
+maturity: experimental
 name: context-refactoring
 description: Safely refactor React Context value structure without silently breaking whole-assignment consumers
 ---

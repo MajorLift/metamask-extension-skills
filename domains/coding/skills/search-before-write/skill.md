@@ -1,4 +1,5 @@
 ---
+maturity: experimental
 name: search-before-write
 description: Search for existing abstractions before writing new logic — in the PR, in the codebase, in tests
 ---

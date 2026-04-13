@@ -1,4 +1,5 @@
 ---
+maturity: experimental
 name: analytics-instrumentation
 description: Create and update Sentry spans, MetaMetrics events, and Segment events — methodology, policies, common pitfalls
 requires:

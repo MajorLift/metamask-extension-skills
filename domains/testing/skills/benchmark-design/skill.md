@@ -1,4 +1,5 @@
 ---
+maturity: experimental
 name: benchmark-design
 description: Design, run, and analyze E2E performance benchmarks — session hygiene, per-round reporting, artifact grouping
 ---
