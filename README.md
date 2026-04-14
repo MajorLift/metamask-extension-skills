@@ -28,15 +28,17 @@ These three make the case. Skills succeed when they encode something the team le
 
 ## All skills
 
-| Domain | Skill |
-|---|---|
-| ai-collaboration | [`specifications-as-guardrails`](domains/ai-collaboration/skills/specifications-as-guardrails/skill.md) |
-| analytics | [`analytics-instrumentation`](domains/analytics/skills/analytics-instrumentation/skill.md), [`sentry-mcp-queries`](domains/analytics/skills/sentry-mcp-queries/skill.md) |
-| coding | [`shape-change-refactoring`](domains/coding/skills/shape-change-refactoring/skill.md) |
-| performance | [`render-cascade-debugging`](domains/performance/skills/render-cascade-debugging/skill.md) |
-| platform | [`extension-errors-debugging`](domains/platform/skills/extension-errors-debugging/skill.md), [`extension-lifecycle-decoupling`](domains/platform/skills/extension-lifecycle-decoupling/skill.md) |
-| pr-workflow | [`commit-discipline`](domains/pr-workflow/skills/commit-discipline/skill.md), [`pr-description`](domains/pr-workflow/skills/pr-description/skill.md) |
-| testing | [`benchmark-design`](domains/testing/skills/benchmark-design/skill.md) |
+| Domain | Skills | Knowledge |
+|---|---|---|
+| ai-collaboration | [`specifications-as-guardrails`](domains/ai-collaboration/skills/specifications-as-guardrails/skill.md) | — |
+| analytics | [`analytics-instrumentation`](domains/analytics/skills/analytics-instrumentation/skill.md), [`sentry-mcp-queries`](domains/analytics/skills/sentry-mcp-queries/skill.md) | [`metrametrics-identity`](domains/analytics/knowledge/metrametrics-identity.md), [`segment-governance`](domains/analytics/knowledge/segment-governance.md) |
+| coding | [`shape-change-refactoring`](domains/coding/skills/shape-change-refactoring/skill.md) | — |
+| performance | [`render-cascade-debugging`](domains/performance/skills/render-cascade-debugging/skill.md) | [`render-cascade`](domains/performance/knowledge/render-cascade.md), [`selector-anti-patterns`](domains/performance/knowledge/selector-anti-patterns.md) |
+| platform | [`extension-errors-debugging`](domains/platform/skills/extension-errors-debugging/skill.md), [`extension-lifecycle-decoupling`](domains/platform/skills/extension-lifecycle-decoupling/skill.md) | [`extension-architecture`](domains/platform/knowledge/extension-architecture.md), [`mv3-service-worker`](domains/platform/knowledge/mv3-service-worker.md) |
+| pr-workflow | [`commit-discipline`](domains/pr-workflow/skills/commit-discipline/skill.md), [`pr-description`](domains/pr-workflow/skills/pr-description/skill.md) | — |
+| testing | [`benchmark-design`](domains/testing/skills/benchmark-design/skill.md) | — |
+
+Skills load their required knowledge via frontmatter (`requires: [render-cascade, selector-anti-patterns]`). Knowledge files are longer-form reference material consumed on demand, not standalone docs.
 
 The method generalizes even where individual skills don't. The admission filter, the [two-layer `skill.md` + `repos/<repo>.md` overlay structure](AUTHORING.md), and the `Do Not Use When` forcing function apply to any team running agents in the loop.
 
