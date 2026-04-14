@@ -55,18 +55,32 @@ From the [Extension Frontend Performance Audit epic](https://github.com/MetaMask
 
 Review action: never allow a PR to increase any of these counters.
 
-## P0 Root-Cause Selectors
+## Regression Watchlist
 
-Five targets identified as P0 root causes in [#6669](https://github.com/MetaMask/MetaMask-planning/issues/6669). Review any PR touching them with extra scrutiny:
+These five root-cause selectors and HOCs were fixed under the [P0 Break Global Re-render Cascade epic (#6669)](https://github.com/MetaMask/MetaMask-planning/issues/6669). Re-introducing any of their original patterns brings back the 125-200-re-render-per-action cascade. Block any PR that regresses them:
 
-- [`getPendingApprovals`](https://github.com/MetaMask/MetaMask-planning/issues/6673)
-- [`pendingConfirmationsSortedSelector`](https://github.com/MetaMask/MetaMask-planning/issues/6674)
-- [`getSortedAnnouncementsToShow`](https://github.com/MetaMask/MetaMask-planning/issues/6670)
-- `MetaMetricsProvider` context value ([#6640](https://github.com/MetaMask/MetaMask-planning/issues/6640))
-- `withRouterHooks` HOC memoization ([#6671](https://github.com/MetaMask/MetaMask-planning/issues/6671))
+| Target | Original pattern | Fix ticket |
+|---|---|---|
+| `getPendingApprovals` | Plain function returned `Object.values()` on every call | [#6673](https://github.com/MetaMask/MetaMask-planning/issues/6673) (closed) |
+| `pendingConfirmationsSortedSelector` | Plain function chained filter/sort | [#6674](https://github.com/MetaMask/MetaMask-planning/issues/6674) (closed) |
+| `getSortedAnnouncementsToShow` | Plain function chained `Object.values` / filter / sort | [#6670](https://github.com/MetaMask/MetaMask-planning/issues/6670) (closed) |
+| `MetaMetricsProvider` context value | Unstable object literal + `useLocation()` mutation | [#6640](https://github.com/MetaMask/MetaMask-planning/issues/6640) (closed) |
+| `withRouterHooks` HOC | Passed `useParams()` result directly as a new object | [#6671](https://github.com/MetaMask/MetaMask-planning/issues/6671) (closed) |
 
-## Reference Docs
+## Residual Cleanup Tickets
+
+Still open under [#6669](https://github.com/MetaMask/MetaMask-planning/issues/6669) — compensating identity wrappers that became redundant after the P0 fixes:
+
+- [#6663](https://github.com/MetaMask/MetaMask-planning/issues/6663) — Remove 3 identity wrappers (confirmations)
+- [#6672](https://github.com/MetaMask/MetaMask-planning/issues/6672) — Remove 7 identity wrappers (`selectors.js`)
+- [#6664](https://github.com/MetaMask/MetaMask-planning/issues/6664) — Remove snaps/ identity wrappers
+- [#6665](https://github.com/MetaMask/MetaMask-planning/issues/6665) — Remove multichain identity wrapper
+- [#6537](https://github.com/MetaMask/MetaMask-planning/issues/6537) — Audit `createDeepEqualSelector` usage (129 → ~25)
+
+## Example Fix Methodology
+
+[PR #37147](https://github.com/MetaMask/metamask-extension/pull/37147) fixed `getInternalAccounts` as the canonical example. Before: `createSelector(selectInternalAccounts, (accounts) => accounts)` (identity function, defeats memoization). After: `createSelector(getInternalAccountsObject, (accounts) => Object.values(accounts))`. Impact: 50+ component re-renders eliminated per state update.
+
+## Reference
 
 - [Frontend Performance Optimization Guidelines](https://github.com/MetaMask/contributor-docs/pull/159) (contributor-docs PR #159, pending merge)
-- [WDYR Technical Analysis](https://github.com/MetaMask/metamask-extension/blob/develop/docs/perf-audit/WDYR_TECHNICAL_ANALYSIS.md)
-- [Global Cascade Epic breakdown](https://github.com/MetaMask/metamask-extension/blob/develop/docs/perf-audit/GLOBAL_CASCADE_EPIC.md)
