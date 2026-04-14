@@ -16,6 +16,12 @@ requires:
 - Components re-render during idle (background polling)
 - `useReducer` render counter jumps 5+ times per action
 
+## Do Not Use When
+
+- Backend or controller performance issues with no React render involvement
+- Network-bound slowness (use the Network panel, not WDYR)
+- One-time slowness during initial mount only (use startup profiling)
+
 ## Workflow
 
 1. **Confirm cascade** — Add render counter to a high-level component. If count jumps 5+ per action, cascade is confirmed.

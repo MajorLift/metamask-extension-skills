@@ -6,6 +6,17 @@ description: Treat failing automated checks as signals to investigate, not obsta
 
 # Specifications as Guardrails
 
+## When To Use
+
+- A failing CI test, TypeScript error, lint rule, or schema check is blocking work
+- Considering disabling, weakening, or bypassing an automated check
+- A pre-existing flaky test is tempting to delete rather than diagnose
+
+## Do Not Use When
+
+- The check is genuinely wrong and the team has explicitly agreed to update it
+- The spec change is part of a documented requirement change
+
 ## Core Principle
 
 Automated checks are the specification. When they fail, the code doesn't meet the spec — not the other way around.

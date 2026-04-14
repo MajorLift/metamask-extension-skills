@@ -14,6 +14,11 @@ requires:
 - Debugging behavior that "should" trigger on lock/unlock but doesn't
 - Investigating keepalive, timer, or state persistence behavior
 
+## Do Not Use When
+
+- Working on UI-only code with no background process interaction
+- The behavior reproduces reliably in development without service worker eviction
+
 ## Core Distinction
 
 | Layer | Examples | Characteristics |

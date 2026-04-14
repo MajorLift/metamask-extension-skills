@@ -8,7 +8,15 @@ description: Write PR descriptions that convey intent and impact, not diff inven
 
 ## When To Use
 
-Any PR description — new feature, bug fix, refactor, dependency update.
+- Drafting a new PR description (feature, bug fix, refactor, dependency update)
+- Updating an existing PR description after scope or approach changes
+- Reviewing your own PR description before requesting review
+
+## Do Not Use When
+
+- Drafting an issue, RFC, or ADR (different format conventions)
+- Replying to PR review comments (use review reply conventions)
+- Internal-only branches with no review intended
 
 ## Workflow
 

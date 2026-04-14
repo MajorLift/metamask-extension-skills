@@ -16,6 +16,12 @@ requires:
 - Errors that are hard to reproduce in development (only manifest in prod)
 - Diagnosing Sentry errors before attributing root cause
 
+## Do Not Use When
+
+- Local development errors with full stack traces and reliable repro
+- Build/compile errors (TypeScript, ESLint, bundler)
+- Test failures unrelated to extension runtime behavior
+
 ## Workflow
 
 1. **Check distribution** — Filter by `dist` tag. Is the error 99%+ MV3, MV2, or split?

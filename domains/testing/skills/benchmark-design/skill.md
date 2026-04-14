@@ -13,6 +13,12 @@ description: Design, run, and analyze E2E performance benchmarks — session hyg
 - Adding new metrics to existing benchmarks
 - Diagnosing unexpected benchmark results
 
+## Do Not Use When
+
+- Adding unit, integration, or correctness E2E tests
+- Profiling a single user-reported slowdown (use `perf-cascade-debugging`)
+- Writing micro-benchmarks outside the E2E harness
+
 ## Workflow
 
 1. **Design the flow** — target ONE optimization vector per benchmark. Maximize ratio of optimization-affected time to total measured time.

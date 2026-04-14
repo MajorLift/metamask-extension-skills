@@ -14,6 +14,12 @@ description: Query Sentry via MCP — error triage, tag distribution, volume est
 - Comparing error rates release-over-release for regression detection
 - Retrieving session replay or profiling data
 
+## Do Not Use When
+
+- The error reproduces locally with a full stack trace
+- Reading product analytics (Segment events, not Sentry errors/spans)
+- Pre-merge investigation — Sentry data is post-merge only
+
 ## Setup
 
 Run once per session:

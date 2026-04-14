@@ -12,6 +12,11 @@ description: Atomic commits, granular commit chain construction, and pre-push li
 - Splitting or reorganizing work before pushing
 - Reviewing a commit chain before requesting review
 
+## Do Not Use When
+
+- The PR will be squash-merged via the GitHub UI (the merge bot owns final commit shape)
+- WIP commits on a personal branch with no PR planned
+
 ## Atomic Commit Rule
 
 Each commit must contain changes that share a single motivation.

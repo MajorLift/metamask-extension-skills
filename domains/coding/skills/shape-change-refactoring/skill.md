@@ -17,6 +17,12 @@ Any change to the shape of a value that has multiple consumers and isn't fully t
 - Function return type
 - API or RPC response shape
 
+## Do Not Use When
+
+- Internal-only changes within a single file with no exports
+- Pure renames or formatting that don't alter runtime shape
+- Type-level changes that produce identical runtime values
+
 ## The Failure Mode
 
 Two consumer access patterns produce different breakage characteristics:

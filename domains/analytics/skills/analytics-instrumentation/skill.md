@@ -18,6 +18,14 @@ requires:
 
 ---
 
+## Do Not Use When
+
+- Adding local debug logging with no telemetry destination
+- Investigating an existing Sentry error report (use `sentry-mcp-queries`)
+- Internal feature flag evaluation not surfaced as an analytics event
+
+---
+
 ## Sentry Spans
 
 ### Creating a Span
