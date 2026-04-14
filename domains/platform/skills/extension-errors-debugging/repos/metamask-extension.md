@@ -20,7 +20,7 @@ Filter by `installType` to exclude developer-loaded builds:
 yarn start
 
 # MV2 development (Firefox, background page)
-yarn start:mv2 2>/dev/null || ENABLE_MV2_COMPAT=1 yarn start
+yarn start:mv2
 
 # Production build (both manifests)
 yarn dist
@@ -31,7 +31,7 @@ yarn lavamoat:auto
 
 ## Background Keepalive
 
-Background keepalive is managed in `app/scripts/lib/`. Keepalive failures are almost always MV3-only. Check if `keepalive` timers are referenced in the failing stack trace before assuming application bug.
+Background keepalive is managed in `app/scripts/background.js` (the `saveTimestamp` setInterval pattern). Keepalive failures are almost always MV3-only. Check if `keepalive` timers are referenced in the failing stack trace before assuming application bug.
 
 ## Controller-Messenger Pattern
 
