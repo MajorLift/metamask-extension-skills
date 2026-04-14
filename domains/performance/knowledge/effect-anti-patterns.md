@@ -6,16 +6,7 @@ description: Four React `useEffect` patterns that cause unnecessary renders, mem
 
 # Effect Anti-Patterns
 
-The [Extension Frontend Performance Audit epic](https://github.com/MetaMask/MetaMask-planning/issues/6571) catalogued four `useEffect` patterns that are systemically broken across the MetaMask UI. The full sub-epic is [#6525](https://github.com/MetaMask/MetaMask-planning/issues/6525) with measured counts for each pattern.
-
-## Pattern Summary
-
-| Pattern | Baseline | Severity | Sub-ticket |
-|---|---|---|---|
-| `JSON.stringify` in dependency array | 4 instances in 4 files | 🔴 Critical | [#6545](https://github.com/MetaMask/MetaMask-planning/issues/6545) |
-| `useEffect` + `setState` | 200+ instances in 152 files | Medium | [#6540](https://github.com/MetaMask/MetaMask-planning/issues/6540) |
-| Missing interval/timer cleanup | 122 instances in 75 files | Audit | [#6541](https://github.com/MetaMask/MetaMask-planning/issues/6541) |
-| Missing `AbortController` in async effects | 32 `addEventListener` sites, 28 good `AbortController` sites | Audit | [#6542](https://github.com/MetaMask/MetaMask-planning/issues/6542) |
+Four `useEffect` patterns that are systemically broken in React codebases. Each pattern has a broken example, a fixed example, and a detection recipe.
 
 ## 1. `JSON.stringify` in Dependency Array
 
@@ -103,11 +94,7 @@ useEffect(() => {
 }, [url])
 ```
 
-The team has a shared [`useIsMounted` hook planned](https://github.com/MetaMask/MetaMask-planning/issues/6544) for cases where `AbortController` doesn't fit.
-
 ## Why These Matter
-
-From [#6525](https://github.com/MetaMask/MetaMask-planning/issues/6525):
 
 - **Renders.** State-mirror effects double every render in the affected component tree.
 - **Memory.** Uncleared intervals and timers leak proportional to how often the component mounts.

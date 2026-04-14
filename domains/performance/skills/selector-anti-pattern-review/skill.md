@@ -11,13 +11,12 @@ requires:
 
 **Scope:** Redux selector anti-patterns are the dominant cause of React render cascades in the MetaMask UI. This skill covers both review phases: pre-merge PR review (grep-driven checklist) and post-merge diagnosis (WDYR-driven workflow). Both modes resolve to the same root cause and the same fix set, catalogued in [`selector-anti-patterns`](../../knowledge/selector-anti-patterns.md) and [`render-cascade`](../../knowledge/render-cascade.md).
 
-The pattern list comes from the [Extension Frontend Performance Audit epic](https://github.com/MetaMask/MetaMask-planning/issues/6571). Both `metamask-extension` and `metamask-mobile` share the same React + Redux architecture; this skill applies to both (see overlays for repo-specific paths).
+Both `metamask-extension` and `metamask-mobile` share the same React + Redux architecture; this skill applies to both (see overlays for repo-specific paths).
 
 ## When To Use
 
 - **Pre-merge.** Reviewing a PR that touches a `selectors/` directory, adds a `useSelector` call, or modifies a `createSelector` / `createDeepEqualSelector` definition
 - **Post-merge.** Re-renders are disproportionate to state change size, performance degrades non-linearly with user data size, or components re-render during idle
-- **Audit.** Working through the `1,696 CI warnings` baseline from [#6524](https://github.com/MetaMask/MetaMask-planning/issues/6524)
 - **Triage.** A WDYR counter jumps 5+ times per action, or a React render counter shows unexpected re-renders
 
 ## Do Not Use When
@@ -62,7 +61,7 @@ See the repo overlay for the concrete `<selectors-dir>` path.
 
 ## Team-Specific Workarounds
 
-The [Selector Optimization sub-epic (#6524)](https://github.com/MetaMask/MetaMask-planning/issues/6524) added two patterns beyond the five in the knowledge file. Both are workarounds for broken selectors downstream. The fix is always to fix the selector, never to propagate the workaround.
+Two patterns show up beyond the five in the knowledge file. Both are workarounds for broken selectors downstream. The fix is always to fix the selector, never to propagate the workaround.
 
 ### `useSelector(selector, isEqual)` from `react-redux`
 
@@ -71,7 +70,6 @@ The [Selector Optimization sub-epic (#6524)](https://github.com/MetaMask/MetaMas
 const accounts = useSelector(getAccounts, isEqual)
 ```
 
-- **Baseline:** 44 instances across the repo ([#6524](https://github.com/MetaMask/MetaMask-planning/issues/6524)), target 0.
 - **Detection:** `grep -rnE 'useSelector\([^,]+,\s*(isEqual|shallowEqual)'`
 - **Review action:** Find `getAccounts` (or whichever selector). Fix it to return a stable reference. Remove the `isEqual` argument in the same PR.
 - **Why it's wrong:** Deep equality at the consumption site adds O(n) per render and leaves every other consumer of the same selector broken.
@@ -86,7 +84,6 @@ const getTokens = createDeepEqualSelector(
 )
 ```
 
-- **Baseline:** 129 instances, target ~25 ([#6524](https://github.com/MetaMask/MetaMask-planning/issues/6524)).
 - **Detection:** `grep -rn createDeepEqualSelector <selectors-dir>/`
 - **Review action:** For each instance, check if the inputs come from Redux state. If yes, swap to `createSelector`. Immer already gives stable references.
 - **The narrow exception:** Inputs that are genuinely not from Immer/Redux state (e.g. derived from a non-Redux source, or passed in as props). These stay.

@@ -15,7 +15,7 @@ parent: effect-anti-pattern-review
 grep -rnE 'useEffect\([^)]*\[.*JSON\.stringify' app/ --include="*.ts" --include="*.tsx"
 
 # Pattern 3: setInterval / setTimeout
-grep -rnE 'setInterval|setTimeout' app/ --include="*.ts" --include="*.tsx" | wc -l
+grep -rnE 'setInterval|setTimeout' app/ --include="*.ts" --include="*.tsx"
 
 # Pattern 4: fetch inside useEffect (manual review required for context)
 grep -rn 'fetch(' app/ --include="*.ts" --include="*.tsx"
@@ -23,8 +23,7 @@ grep -rn 'fetch(' app/ --include="*.ts" --include="*.tsx"
 
 ## Differences from Extension
 
-- Mobile has no parallel to the [#6525 extension baselines](https://github.com/MetaMask/MetaMask-planning/issues/6525). The patterns apply identically, but repo-specific counts have not been published.
-- Mobile has no shared `useIsMounted` hook yet. Prefer `AbortController` for all new async effects.
+- Prefer `AbortController` for all new async effects. No shared `useIsMounted` hook exists.
 - React Native's `fetch` behaves identically to browser `fetch` for cancellation purposes.
 
 ## Reference Docs

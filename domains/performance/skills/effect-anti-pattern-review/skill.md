@@ -1,14 +1,14 @@
 ---
 maturity: experimental
 name: effect-anti-pattern-review
-description: Review PR diffs that add or modify `useEffect` for the four systemic anti-patterns catalogued by the Frontend Performance Audit
+description: Review PR diffs that add or modify `useEffect` for the four systemic React effect anti-patterns
 requires:
   - effect-anti-patterns
 ---
 
 # Effect Anti-Pattern Review
 
-**Scope:** Pre-merge review of PRs that add or modify `useEffect` calls. The workflow is a grep-driven checklist against the four patterns catalogued in [`effect-anti-patterns`](../../knowledge/effect-anti-patterns.md), sourced from the [useEffect Anti-Patterns sub-epic (#6525)](https://github.com/MetaMask/MetaMask-planning/issues/6525) of the [Extension Frontend Performance Audit](https://github.com/MetaMask/MetaMask-planning/issues/6571).
+**Scope:** Pre-merge review of PRs that add or modify `useEffect` calls. The workflow is a grep-driven checklist against the four patterns catalogued in [`effect-anti-patterns`](../../knowledge/effect-anti-patterns.md).
 
 Applies to both `metamask-extension` and `metamask-mobile`. See overlays for repo-specific paths.
 
@@ -16,7 +16,6 @@ Applies to both `metamask-extension` and `metamask-mobile`. See overlays for rep
 
 - Reviewing a PR that adds or modifies a `useEffect` call
 - Reviewing a PR that adds `setInterval`, `setTimeout`, `fetch`, or `addEventListener` inside a component
-- Auditing a file flagged by the [#6525 baselines](../../knowledge/effect-anti-patterns.md#pattern-summary)
 - Investigating a "Can't perform a React state update on an unmounted component" warning
 
 ## Do Not Use When
@@ -30,9 +29,9 @@ Applies to both `metamask-extension` and `metamask-mobile`. See overlays for rep
 1. **List changed files with `useEffect`.** `git diff --name-only origin/main...HEAD | xargs grep -l 'useEffect'`
 2. **Run the [grep checklist](#grep-checklist)** against the changed files.
 3. **For each hit, map to a pattern** in [`effect-anti-patterns`](../../knowledge/effect-anti-patterns.md) and apply the fix from the knowledge file.
-4. **Block on pattern 1.** `JSON.stringify` in a dependency array is a P0 per [#6545](https://github.com/MetaMask/MetaMask-planning/issues/6545). Do not merge.
+4. **Block on pattern 1.** `JSON.stringify` in a dependency array is always broken. Do not merge.
 5. **Block on pattern 3 without cleanup.** Any `setInterval` / `setTimeout` without a matching `clearInterval` / `clearTimeout` in the cleanup function is blocking.
-6. **Require cancellation for async effects.** Any `fetch` / network call inside `useEffect` must use `AbortController` or the shared `useIsMounted` hook ([#6544](https://github.com/MetaMask/MetaMask-planning/issues/6544)).
+6. **Require cancellation for async effects.** Any `fetch` / network call inside `useEffect` must use `AbortController`.
 
 ## Grep Checklist
 

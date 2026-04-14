@@ -19,9 +19,9 @@ ENABLE_WHY_DID_YOU_RENDER=true yarn start
 
 # Pre-merge grep checklist
 grep -rE 'export function get' app/selectors/ --include="*.ts"
-grep -rn createDeepEqualSelector app/ --include="*.ts" | wc -l
-grep -rnE 'useSelector\([^,]+,\s*(isEqual|shallowEqual)' app/ --include="*.ts" --include="*.tsx" | wc -l
-grep -rnE '\.find\(' app/selectors/ | wc -l
+grep -rn createDeepEqualSelector app/ --include="*.ts"
+grep -rnE 'useSelector\([^,]+,\s*(isEqual|shallowEqual)' app/ --include="*.ts" --include="*.tsx"
+grep -rnE '\.find\(' app/selectors/
 ```
 
 ## WDYR
@@ -32,6 +32,4 @@ Current configuration (at time of authoring): `trackAllPureComponents: true`, `o
 
 ## Differences from Extension
 
-- Mobile has no parallel to the Extension Frontend Performance Audit epic baselines. The same patterns apply, but repo-specific counts have not been published.
-- Mobile has no documented P0 root-cause list. Apply the [pre-merge checklist](../skill.md#mode-a-pre-merge-review-grep-driven) on every selector-touching PR.
 - React Compiler adoption and `"use no memo"` opt-outs are extension-only at this time.
