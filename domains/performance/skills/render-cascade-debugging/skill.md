@@ -1,13 +1,15 @@
 ---
 maturity: experimental
-name: perf-cascade-debugging
-description: Diagnose and fix React+Redux render cascades
+name: render-cascade-debugging
+description: Diagnose and fix React+Redux render cascades in MetaMask UI
 requires:
   - render-cascade
   - selector-anti-patterns
 ---
 
-# Cascade Debugging
+# Render Cascade Debugging
+
+**Scope:** React component render cascades driven by unstable Redux selectors, context values, or prop identity. Intentionally narrow — the WDYR workflow and selector-creator fixes below only map to this failure class. Other "perf is slow" situations (backend, network, startup, native) need a different skill.
 
 ## When To Use
 
@@ -21,6 +23,7 @@ requires:
 - Backend or controller performance issues with no React render involvement
 - Network-bound slowness (use the Network panel, not WDYR)
 - One-time slowness during initial mount only (use startup profiling)
+- Non-React trees (worker messaging, background script perf)
 
 ## Workflow
 

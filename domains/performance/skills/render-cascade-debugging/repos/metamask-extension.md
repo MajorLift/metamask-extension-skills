@@ -1,6 +1,6 @@
 ---
 repo: metamask-extension
-parent: perf-cascade-debugging
+parent: render-cascade-debugging
 ---
 
 ## Commands

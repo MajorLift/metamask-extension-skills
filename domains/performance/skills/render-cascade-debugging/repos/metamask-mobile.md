@@ -1,6 +1,6 @@
 ---
 repo: metamask-mobile
-parent: perf-cascade-debugging
+parent: render-cascade-debugging
 ---
 
 ## Commands
