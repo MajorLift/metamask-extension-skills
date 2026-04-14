@@ -44,8 +44,8 @@ Before claiming a platform lifecycle event causes application behavior:
 |------------|---------|
 | SW eviction triggers lock | No `onSuspend` lock handler — SW eviction does NOT trigger lock |
 | Timers lost on SW restart | Auto-lock uses Chrome Alarms API — persists across SW restarts |
-| State lost on SW restart | Wallet state persists in `chrome.storage.session` |
-| SW evicts frequently | Keepalive fires every 2s via `chrome.alarms` — prevents most evictions |
+| State lost on SW restart | Wallet state persists in `chrome.storage.session` and IndexedDB |
+| SW evicts frequently during active use | `background.js:750-758` calls `browser.storage.session.set` every 2s. Each `chrome.*`/`browser.*` call resets the 30s idle timer, so active-session eviction is effectively prevented. Cold starts (browser launch, extension reload) still happen. See `mv3-service-worker` knowledge for mechanism and verification discipline |
 
 ## Common Pitfalls
 
@@ -54,3 +54,4 @@ Before claiming a platform lifecycle event causes application behavior:
 | "SW evicts N times/day → event fires N times/day" | Check if application code has handler for eviction |
 | Assume frequency from platform behavior | Grep for actual handler chains in `background.js`, `app-state-controller.ts` |
 | Conflate platform restart with application reset | Check which state is persisted vs re-initialized |
+| "Keepalive uses `chrome.alarms`" | It does not — keepalive uses `browser.storage.session.set` at 2s cadence. `chrome.alarms` is used separately for auto-lock timers that must persist across SW restart |
