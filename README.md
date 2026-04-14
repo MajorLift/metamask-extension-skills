@@ -21,7 +21,7 @@ Skills earn entry by being non-derivable, invariant, and sourced from real team 
 ## Flagship examples
 
 - [`sentry-mcp-queries`](domains/analytics/skills/sentry-mcp-queries/skill.md). Operational observability. Encodes `dist`-tag discipline (check MV3 vs MV2 before attributing root cause), release-comparison methodology (normalize by sessions, filter unreliable releases by rollout age), and span volume estimation. The kind of thing every team with production errors needs, and gets wrong before writing it down.
-- [`analytics-instrumentation`](domains/analytics/skills/analytics-instrumentation/skill.md). A governance trap disguised as a how-to. `isOptIn: true` silently strips identity for every user, not just non-opted-in ones. No amount of code-reading catches this. The skill exists because the team burned on it.
+- [`analytics-instrumentation`](domains/analytics/skills/analytics-instrumentation/skill.md). A governance trap disguised as a how-to. `isOptIn: true` silently strips identity for every user, not just non-opted-in ones. No amount of code-reading catches this. The skill exists because the team burned on it. Requires [`metrametrics-identity`](domains/analytics/knowledge/metrametrics-identity.md) and [`segment-governance`](domains/analytics/knowledge/segment-governance.md).
 - [`specifications-as-guardrails`](domains/ai-collaboration/skills/specifications-as-guardrails/skill.md). Broadest applicability in the repo. An AI-collaboration posture any team can adopt: failing checks are signal, not obstacles to remove.
 
 These three make the case. Skills succeed when they encode something the team learned the hard way, in terms specific enough to act on in a crisis.
