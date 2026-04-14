@@ -15,16 +15,23 @@ description: MV3 service worker lifecycle — Chrome background termination mode
 
 ## Idle Termination Mitigation
 
-`app/scripts/background.js:750-758` runs a 2s `chrome.storage.local` write loop:
+`app/scripts/background.js:750-758` runs a 2s `browser.storage.session` write loop. `saveTimestamp` (defined at `background.js:651-655`) writes an ISO timestamp into session storage:
 
+    function saveTimestamp() {
+      const timestamp = new Date().toISOString();
+      browser.storage.session.set({ timestamp });
+    }
+    ...
     const SAVE_TIMESTAMP_INTERVAL_MS = 2 * 1000;
     saveTimestamp();
     setInterval(saveTimestamp, SAVE_TIMESTAMP_INTERVAL_MS);
 
-Each `chrome.*` API call resets the 30s idle timer. At 2s cadence the worker stays alive indefinitely while the extension is active.
+Each `chrome.*` / `browser.*` API call resets the 30s idle timer. At 2s cadence the worker stays alive indefinitely while the extension is active. `storage.session` (not `storage.local`) is deliberate — it is MV3-only, in-memory, and does not accumulate disk writes from a heartbeat.
 
 | Property | Value |
 |---|---|
+| API | `browser.storage.session.set` (MV3-only, in-memory) |
+| Interval | 2000 ms (`SAVE_TIMESTAMP_INTERVAL_MS`) |
 | Gate | `PreferencesController.enableMV3TimestampSave !== false` (default true) |
 | Inline comment | `background.js:752` — "This keeps the service worker alive" |
 | Pattern origin | De facto community consensus, not officially endorsed by Chrome DevRel |
@@ -36,7 +43,7 @@ Ongoing idle termination is **not** a live failure mode while the extension is r
 
 Before attributing an MV3-concentrated error to "idle termination pressure":
 
-1. Verify `background.js:750-758` keepalive loop still exists
+1. Verify `background.js:750-758` keepalive loop still exists and `saveTimestamp` still calls a `chrome.*` / `browser.*` API
 2. Verify `enableMV3TimestampSave` is not disabled in affected Sentry events
 3. Check whether error timing correlates with cold-start events, not idle periods
 
