@@ -18,7 +18,7 @@ All content in this repo is consumed by LLM agents. Every token costs latency an
 
 **What fails this filter (examples):** generic debugging methodology (non-derivable fails), rhetorical structure for analytical prose (invariant fails), general AI collaboration hygiene (non-derivable fails), a contributor workflow for this repo itself (belongs in this file, not a skill).
 
-**What passes (and why the existing skills qualify):** `render-cascade-debugging` names the real `selector-creators.ts` location and the creators (non-derivable — the canonical location moved); `analytics-instrumentation` encodes the `isOptIn: true` pitfall and cross-process context propagation (invariant — the team has burned on these); `benchmark-design` encodes session hygiene discovered empirically (atomic-network — came from real benchmark work).
+**What passes (and why the existing skills qualify):** `selector-anti-pattern-review` names the real `selector-creators.ts` location and the creators (non-derivable — the canonical location moved); `analytics-instrumentation` encodes the `isOptIn: true` pitfall and cross-process context propagation (invariant — the team has burned on these); `benchmark-design` encodes session hygiene discovered empirically (atomic-network — came from real benchmark work).
 
 ## Rules
 

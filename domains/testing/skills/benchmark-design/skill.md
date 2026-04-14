@@ -16,7 +16,7 @@ description: Design, run, and analyze E2E performance benchmarks — session hyg
 ## Do Not Use When
 
 - Adding unit, integration, or correctness E2E tests
-- Profiling a single user-reported slowdown (use `render-cascade-debugging`)
+- Profiling a single user-reported slowdown (use `selector-anti-pattern-review`)
 - Writing micro-benchmarks outside the E2E harness
 
 ## Workflow
