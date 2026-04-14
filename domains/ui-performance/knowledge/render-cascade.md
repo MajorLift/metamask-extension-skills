@@ -1,6 +1,6 @@
 ---
 name: render-cascade
-domain: performance
+domain: ui-performance
 description: React+Redux render cascade failure mode — single state change triggers multiple re-render cycles
 ---
 

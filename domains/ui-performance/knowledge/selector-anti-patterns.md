@@ -1,6 +1,6 @@
 ---
 name: selector-anti-patterns
-domain: performance
+domain: ui-performance
 description: Five Redux selector patterns that that break selector memoization and cause render cascades
 ---
 

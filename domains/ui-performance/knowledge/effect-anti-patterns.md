@@ -1,6 +1,6 @@
 ---
 name: effect-anti-patterns
-domain: performance
+domain: ui-performance
 description: Four React `useEffect` patterns that cause unnecessary renders, memory leaks, or race conditions
 ---
 
