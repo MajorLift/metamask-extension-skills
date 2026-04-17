@@ -62,10 +62,8 @@ When encountering a blocker: diagnose first, escalate second. Never modify spec 
 
 | Mistake | Correct Approach |
 |---------|-----------------|
-| Follow type errors across dependency graph into cleanup | Only fix direct dependents that fail to compile |
 | package.json changes for undeclared deps | Revert — only declared deps belong |
 | attribution.txt modified in feature PR | Revert — release artifacts are release-only |
-| "Let me try a different approach" after error | Diagnose the error before switching approaches |
-| New hook that reimplements `useAsyncResult` | Grep for existing utilities first |
-| jest/webpack config changed for one test | Find the scoped fix in the test itself |
-| PR_DESC.md or .cursor/* committed | Revert — dev artifacts don't belong in the repo |
+| New hook that reimplements abstraction | Grep for existing utilities first |
+| shared config e.g. jest/webpack changed for small number of tests | Find the scoped fix in the test itself |
+| Dev artifacts committed | Revert — only commit files that should be tracked in repo |
