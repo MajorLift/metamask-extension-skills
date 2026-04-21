@@ -1,19 +1,13 @@
 ---
 maturity: draft
 name: remember
-description: Capture + crystallize a durable team learning. Shape the body, pick a domain, and decide new-vs-edit at capture time. Defers nothing to later curation.
+description: Capture a durable team learning. Shape the body, pick a domain, and route new-vs-edit in a single step.
 origin: drafted
 ---
 
 # /remember
 
-Capture a skill-shaped learning at the moment it surfaces — **shaping the body and deciding new-vs-edit in the same step** — persisting to the configured skills repo.
-
-`/remember` absorbs `/crystallize`: the invoking agent has the conversation context that makes shaping cheap. That context is lost by the time curation happens. Deferring shaping to a later "curation pass" is the antipattern — TODO-riddled stubs pile up and nobody can crystallize them without re-deriving the original context.
-
-`/remember` also absorbs **pick-domain** and **decide-new-vs-edit**: before writing, the invoker searches existing skills for overlap and picks a target domain. If the learning refines or contradicts an existing skill, amend that skill. Only create a new entry when no existing skill covers the same ground. Captures route directly to `domains/<domain>/skills/<slug>/` — the `inbox/` staging area has no curator, so skills stuck there never ship.
-
-Capture + shape + route fire together. Curation is review, promotion, and deprecation — not drafting from scratch.
+Capture a skill-shaped learning at the moment it surfaces, persist it to the configured skills repo, and route it to the right domain — all in one step.
 
 ## Do Not Use When
 
@@ -26,10 +20,10 @@ Capture + shape + route fire together. Curation is review, promotion, and deprec
 
 ## When To Use
 
-- The user directly asks to capture something (`/remember X`, "let's save that as a skill"). Before committing: search the bundle for overlap, shape a body, decide new-vs-edit.
-- A reviewer surfaces a durable convention or antipattern on a PR. `@metamaskbot /remember <text>` in the thread captures the one-liner; the shaping and new-vs-edit decision happen in the opened PR before merge (or in the direct-commit amendment for the `direct` tier if the invoker passed `--edit`).
-- A correction or insight has been stated explicitly and the user has signaled it's worth keeping. Shape the body from the preceding exchange; route via `--edit` if it refines an existing skill.
-- The `skill-capture-cues` prompt has been accepted and the paraphrase is approved. The paraphrase IS the shaped capture.
+- The user directly asks to capture something (`/remember X`, "let's save that as a skill").
+- A reviewer surfaces a durable convention or antipattern on a PR. `@metamaskbot /remember <text>` in the thread captures the one-liner; for the `direct` tier the invoker passes `--edit` or `--domain` as appropriate.
+- A correction or insight has been stated explicitly and the user has signaled it's worth keeping.
+- The `skill-capture-cues` prompt has been accepted and the paraphrase is approved.
 
 ## Action shape
 
@@ -37,7 +31,7 @@ Capture + shape + route fire together. Curation is review, promotion, and deprec
 
 1. **Search for overlap.** Grep the local skills bundle (`.cursor/rules/`, `.agents/skills/`, or `.claude/skills/` — whatever's synced) for an existing skill that covers this ground. Exact-match name overlap, keyword overlap, or concept overlap all qualify.
 2. **Shape the body.** Write `When To Use`, `Do Not Use When`, `Notes` from the live conversation context. One to three sentences per section is usually enough.
-3. **Pick a domain.** Match the capture against existing domains (`ai-collaboration`, `analytics`, `coding`, `meta`, `performance`, `platform`, `pr-workflow`, `testing`, `ui-performance`). Propose a new domain if the capture genuinely doesn't fit any existing one — but default to fitting.
+3. **Pick a domain.** Match the capture against existing domains (`ai-collaboration`, `analytics`, `coding`, `meta`, `performance`, `platform`, `pr-workflow`, `testing`, `ui-performance`). Propose a new domain only if the capture genuinely doesn't fit any existing one.
 4. **Choose new-vs-edit.**
    - No overlap → new capture in the chosen domain.
    - Clear overlap → amend the existing skill with `--edit <path>`.
@@ -86,23 +80,6 @@ Do not emit follow-ups for routine successful captures. Agents that consume the 
 
 **Surfaces:**
 
-- `@metamaskbot /remember <text>` as a PR comment (trust-tiered: direct / PR / reject).
+- `@metamaskbot /remember [--domain <name>] <text>` as a PR comment (trust-tiered: direct / PR / reject).
 - `tools/remember.ts` locally or as a CI step.
 - In-session agent invocation with repo write credentials — the agent runs overlap search + shaping + routing before calling the tool.
-
-## Why this is a skill, not just a command
-
-`/remember` is user-invoked and maps to a concrete implementation, but its contract — what qualifies as a capture, how to shape the body, when to edit vs. create new, why all three decisions belong to the capturing agent — is the kind of durable rule that benefits from living alongside the content skills. Agents consuming the bundle learn how the capture system works without a separate doc, and the rule itself evolves through the same loop it enables.
-
-## Why capture, crystallize, and route collapse into one command
-
-Splitting capture from shaping from routing creates a broken loop:
-
-- The agent with the full conversation context captures a one-liner.
-- A staging inbox fills with stubs, some of which duplicate existing skills the capturer didn't check for.
-- A later curator picks up a stub with no conversation context, no memory of the surrounding problem, and has to re-derive what the capture meant — and separately decide whether it's already covered somewhere and where it should live.
-- Most stubs never get shaped. Duplicates survive until someone notices. The inbox becomes a graveyard.
-
-Shaping, routing, and picking a domain at capture time cost the invoking agent about a minute of work while the context is live. Deferring them costs the curator many minutes of re-derivation, or (more often) the skill dies before it ships.
-
-The command that captures is the command that shapes, routes, and places.
