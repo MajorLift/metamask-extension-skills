@@ -1,7 +1,7 @@
 ---
 maturity: draft
 name: remember
-description: Capture + crystallize a durable team learning. Shape the body at capture time and decide new-vs-edit against existing skills before writing. Defers nothing to later curation.
+description: Capture + crystallize a durable team learning. Shape the body, pick a domain, and decide new-vs-edit at capture time. Defers nothing to later curation.
 origin: drafted
 ---
 
@@ -9,9 +9,9 @@ origin: drafted
 
 Capture a skill-shaped learning at the moment it surfaces — **shaping the body and deciding new-vs-edit in the same step** — persisting to the configured skills repo.
 
-`/remember` absorbs `/crystallize`: the invoking agent has the conversation context that makes shaping cheap. That context is lost by the time curation happens. Deferring shaping to a later "curation pass" is the antipattern — TODO-riddled stubs pile up in the inbox and nobody can crystallize them without re-deriving the original context.
+`/remember` absorbs `/crystallize`: the invoking agent has the conversation context that makes shaping cheap. That context is lost by the time curation happens. Deferring shaping to a later "curation pass" is the antipattern — TODO-riddled stubs pile up and nobody can crystallize them without re-deriving the original context.
 
-`/remember` also absorbs **decide-new-vs-edit**: before writing, the invoker searches existing skills for overlap. If the learning refines or contradicts an existing skill, amend that skill. Only create a new inbox entry when no existing skill covers the same ground.
+`/remember` also absorbs **pick-domain** and **decide-new-vs-edit**: before writing, the invoker searches existing skills for overlap and picks a target domain. If the learning refines or contradicts an existing skill, amend that skill. Only create a new entry when no existing skill covers the same ground. Captures route directly to `domains/<domain>/skills/<slug>/` — the `inbox/` staging area has no curator, so skills stuck there never ship.
 
 Capture + shape + route fire together. Curation is review, promotion, and deprecation — not drafting from scratch.
 
@@ -37,11 +37,12 @@ Capture + shape + route fire together. Curation is review, promotion, and deprec
 
 1. **Search for overlap.** Grep the local skills bundle (`.cursor/rules/`, `.agents/skills/`, or `.claude/skills/` — whatever's synced) for an existing skill that covers this ground. Exact-match name overlap, keyword overlap, or concept overlap all qualify.
 2. **Shape the body.** Write `When To Use`, `Do Not Use When`, `Notes` from the live conversation context. One to three sentences per section is usually enough.
-3. **Choose new-vs-edit.**
-   - No overlap → new capture in `domains/inbox/`.
+3. **Pick a domain.** Match the capture against existing domains (`ai-collaboration`, `analytics`, `coding`, `meta`, `performance`, `platform`, `pr-workflow`, `testing`, `ui-performance`). Propose a new domain if the capture genuinely doesn't fit any existing one — but default to fitting.
+4. **Choose new-vs-edit.**
+   - No overlap → new capture in the chosen domain.
    - Clear overlap → amend the existing skill with `--edit <path>`.
    - Contradicts an existing skill → amend with `--edit <path>` and note the reversal in the amendment body.
-4. **Invoke the tool** with the shaped body and the routing decision.
+5. **Invoke the tool** with the shaped body, domain, and routing decision.
 
 **Tool CLI (`tools/remember.ts`):**
 
@@ -53,6 +54,9 @@ node tools/remember.ts [flags] "capture one-liner"
   --audit-url <url>       Audit backlink (PR comment, issue, etc.)
   --mode <commit|local>   commit writes to the skills repo; local writes a file
   --out-dir <dir>         Root dir for --mode local
+  --domain <name>         Route new capture to domains/<name>/. Required for new
+                          captures; missing --domain falls back to 'inbox' and
+                          emits a follow-up nudge.
   --body-file <path>      Pre-shaped markdown body (headings below H1 title).
                           New: replaces the TODO template.
                           Edit: content of the Amendment section.
@@ -64,7 +68,7 @@ node tools/remember.ts [flags] "capture one-liner"
 
 | Mode | Default behavior | With `--body-file` |
 |------|------------------|---------------------|
-| New (no `--edit`) | Creates `domains/inbox/skills/<slug>/skill.md` with TODO placeholders | Creates same file with shaped body replacing TODOs |
+| New (no `--edit`) | Creates `domains/<domain>/skills/<slug>/skill.md` with TODO placeholders | Creates same file with shaped body replacing TODOs |
 | Edit (`--edit <path>`) | Appends an `## Amendment <timestamp>` section (body = capture one-liner) + changelog entry | Appends amendment with shaped body + changelog entry |
 
 **Output contract (all meta-skills):**
@@ -74,6 +78,7 @@ Every meta-skill invocation must return two blocks:
 1. **Outcome** — what actually happened (paths, SHAs, URLs, counts). One line per artifact touched.
 2. **Follow-ups** *(conservative)* — concrete action items only when warranted. Empty is the default; noise defeats the purpose. Warranted cases for `/remember`:
    - Body is TODO placeholders (no `--body-file`) — "Shape the body before this stub rots."
+   - No `--domain` passed — "Falling back to 'inbox'; pick a domain at capture so the skill ships to the bundle."
    - Slug collided (used `-N` suffix) — "Verify this isn't a near-duplicate before promotion."
    - Amendment body is only the capture one-liner (`--edit` without `--body-file`) — "Consider whether parent sections need updating."
 
@@ -94,10 +99,10 @@ Do not emit follow-ups for routine successful captures. Agents that consume the 
 Splitting capture from shaping from routing creates a broken loop:
 
 - The agent with the full conversation context captures a one-liner.
-- The inbox fills with stubs, some of which duplicate existing skills the capturer didn't check for.
-- A later curator picks up a stub with no conversation context, no memory of the surrounding problem, and has to re-derive what the capture meant — and separately decide whether it's already covered somewhere.
+- A staging inbox fills with stubs, some of which duplicate existing skills the capturer didn't check for.
+- A later curator picks up a stub with no conversation context, no memory of the surrounding problem, and has to re-derive what the capture meant — and separately decide whether it's already covered somewhere and where it should live.
 - Most stubs never get shaped. Duplicates survive until someone notices. The inbox becomes a graveyard.
 
-Shaping and routing at capture time cost the invoking agent about a minute of work while the context is live. Deferring them costs the curator many minutes of re-derivation, or (more often) the skill dies in the inbox or ships as a duplicate.
+Shaping, routing, and picking a domain at capture time cost the invoking agent about a minute of work while the context is live. Deferring them costs the curator many minutes of re-derivation, or (more often) the skill dies before it ships.
 
-The command that captures is the command that shapes and the command that routes.
+The command that captures is the command that shapes, routes, and places.
