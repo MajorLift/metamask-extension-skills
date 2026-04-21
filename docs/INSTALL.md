@@ -43,6 +43,27 @@ What it does:
 
 Re-run weekly (or any time you want the latest skills). `/remember` warns if it's been >3 days since last sync.
 
+## Auto-refresh on `git pull` (husky)
+
+If the consuming repo uses husky, wire a `post-merge` hook so skills refresh automatically when engineers pull updates. Drop-in example at [`examples/husky-post-merge/`](../examples/husky-post-merge/README.md).
+
+Short version:
+
+```bash
+cp examples/husky-post-merge/post-merge <consuming-repo>/.husky/post-merge
+chmod +x <consuming-repo>/.husky/post-merge
+```
+
+Engineers opt in once per clone with the consuming repo's hook installer command. In `metamask-extension` that's:
+
+```bash
+yarn githooks:install
+```
+
+The hook is a no-op until `.skills/VERSION` is >7 days stale. Set `SKILLS_SKIP_AUTOSYNC=1` to disable.
+
+Update the consuming repo's README to mention the new hook behavior alongside whatever was there before — engineers need to know what `yarn githooks:install` now wires up.
+
 ## Pinning a ref (supply-chain safety)
 
 By default sync tracks `main`. Pin to a tag, branch, or SHA to freeze what lands in your repo:
