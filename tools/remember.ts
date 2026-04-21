@@ -29,8 +29,15 @@
 // Requires: gh CLI authenticated with write access to the skills repo.
 
 import { execFileSync } from 'node:child_process'
-import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs'
+import { writeFileSync, mkdirSync, existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
+
+const SLUG_RE = /^[a-z0-9-]+$/
+const MAX_CAPTURE_CHARS = 500
+const MAX_DESCRIPTION_CHARS = 200
+const MAX_SLUG_CHARS = 60
+const MAX_DOMAIN_CHARS = 40
+const MAX_BODY_FILE_BYTES = 50 * 1024
 
 type Mode = 'commit' | 'local'
 
@@ -323,8 +330,64 @@ function fetchRemote(
   return { content, sha: parsed.sha, htmlUrl: parsed.html_url }
 }
 
+// Validate inputs up front, before any file reads or network calls.
+// New captures get full checks (slug, description, domain); edits get a
+// lighter check (path shape + body-file) — the target file's frontmatter
+// is already committed and trusted.
+function validateInputs(args: Args): void {
+  if (args.capture.length > MAX_CAPTURE_CHARS) {
+    throw new Error(
+      `Capture text too long: ${args.capture.length} chars (max ${MAX_CAPTURE_CHARS})`,
+    )
+  }
+
+  if (args.editPath) {
+    if (!args.editPath.startsWith('domains/')) {
+      throw new Error(
+        `--edit path must be under domains/ (got '${args.editPath}')`,
+      )
+    }
+  } else {
+    const baseSlug = slugify(args.capture)
+    if (!baseSlug || !SLUG_RE.test(baseSlug) || baseSlug.length > MAX_SLUG_CHARS) {
+      throw new Error(
+        `Derived slug invalid: '${baseSlug}' (must match /^[a-z0-9-]+$/, 1-${MAX_SLUG_CHARS} chars)`,
+      )
+    }
+    const desc = describe(args.capture)
+    if (desc.trim().length === 0) {
+      throw new Error('Derived description is empty')
+    }
+    if (desc.length > MAX_DESCRIPTION_CHARS) {
+      throw new Error(
+        `Derived description too long: ${desc.length} chars (max ${MAX_DESCRIPTION_CHARS})`,
+      )
+    }
+    if (args.domain !== undefined) {
+      if (!SLUG_RE.test(args.domain) || args.domain.length > MAX_DOMAIN_CHARS) {
+        throw new Error(
+          `--domain must match /^[a-z0-9-]+$/ and be ≤${MAX_DOMAIN_CHARS} chars (got '${args.domain}')`,
+        )
+      }
+    }
+  }
+
+  if (args.bodyFile) {
+    if (!existsSync(args.bodyFile)) {
+      throw new Error(`--body-file not found: ${args.bodyFile}`)
+    }
+    const size = statSync(args.bodyFile).size
+    if (size > MAX_BODY_FILE_BYTES) {
+      throw new Error(
+        `--body-file exceeds ${MAX_BODY_FILE_BYTES} bytes: ${args.bodyFile} (${size} bytes)`,
+      )
+    }
+  }
+}
+
 function main(): void {
   const args = parseArgs(process.argv.slice(2))
+  validateInputs(args)
 
   if (args.mode === 'commit') warnIfStale()
 
