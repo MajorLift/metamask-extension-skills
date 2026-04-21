@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// remember.ts — capture a skill-shaped learning as an experimental skill
-// in MajorLift/metamask-extension-skills under domains/inbox/.
+// remember.ts — capture or amend a skill-shaped learning in
+// MajorLift/metamask-extension-skills. New captures land under
+// domains/inbox/; amendments edit an existing skill in place.
 //
 // Usage: node remember.ts [flags] "capture text"
 //
@@ -11,10 +12,17 @@
 //   --mode <commit|local> commit = PUT to skills repo (default)
 //                         local  = write skill.md under --out-dir, no network write
 //   --out-dir <dir>       Root dir for --mode local (default: current dir)
+//   --body-file <path>    Pre-shaped markdown body for the skill (headings below
+//                         the H1 title). Replaces the TODO template when creating
+//                         a new skill; appended as an amendment when editing.
+//   --edit <path>         Edit an existing skill at <path> (e.g.
+//                         domains/<x>/skills/<slug>/skill.md) instead of creating
+//                         a new one in inbox. Adds a changelog entry and, when
+//                         --body-file is given, an amendment section.
 //
 // Runs on any Node with TypeScript type-stripping support
 // (Node 22.6+ with --experimental-strip-types, 23.6+ / 24+ by default).
-// Requires: gh CLI authenticated with write access to the skills repo (commit mode only).
+// Requires: gh CLI authenticated with write access to the skills repo.
 
 import { execFileSync } from 'node:child_process'
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs'
@@ -29,6 +37,8 @@ interface Args {
   auditUrl?: string
   mode: Mode
   outDir?: string
+  bodyFile?: string
+  editPath?: string
 }
 
 const REPO = 'MajorLift/metamask-extension-skills'
@@ -39,6 +49,8 @@ function parseArgs(argv: string[]): Args {
   let sourceRepo: string | undefined
   let auditUrl: string | undefined
   let outDir: string | undefined
+  let bodyFile: string | undefined
+  let editPath: string | undefined
   const positional: string[] = []
 
   for (let i = 0; i < argv.length; i++) {
@@ -64,6 +76,12 @@ function parseArgs(argv: string[]): Args {
       case '--out-dir':
         outDir = argv[++i]
         break
+      case '--body-file':
+        bodyFile = argv[++i]
+        break
+      case '--edit':
+        editPath = argv[++i]
+        break
       case '--':
         positional.push(...argv.slice(i + 1))
         i = argv.length
@@ -78,7 +96,16 @@ function parseArgs(argv: string[]): Args {
   if (!capture) {
     throw new Error('Usage: node remember.ts [flags] "capture text"')
   }
-  return { capture, capturedBy, sourceRepo, auditUrl, mode, outDir }
+  return {
+    capture,
+    capturedBy,
+    sourceRepo,
+    auditUrl,
+    mode,
+    outDir,
+    bodyFile,
+    editPath,
+  }
 }
 
 function run(cmd: string, args: string[]): string {
@@ -141,7 +168,28 @@ function warnIfStale(): void {
   }
 }
 
-function buildBody(args: {
+function readBodyFile(path?: string): string | null {
+  if (!path) return null
+  return readFileSync(path, 'utf8').trimEnd()
+}
+
+function defaultBody(capture: string): string {
+  return [
+    '## Capture',
+    capture,
+    '',
+    '## When To Use',
+    'TODO — shape at capture time. Shaping deferred is shaping abandoned.',
+    '',
+    '## Do Not Use When',
+    'TODO — shape at capture time. Shaping deferred is shaping abandoned.',
+    '',
+    '## Notes',
+    'Experimental capture. Body unshaped — prefer passing --body-file next time.',
+  ].join('\n')
+}
+
+function buildNewSkill(args: {
   slug: string
   title: string
   description: string
@@ -150,6 +198,7 @@ function buildBody(args: {
   sourceRepo: string
   auditUrl?: string
   capture: string
+  shapedBody: string | null
 }): string {
   const frontmatter = [
     'maturity: experimental',
@@ -162,6 +211,8 @@ function buildBody(args: {
     ...(args.auditUrl ? [`audit_url: ${args.auditUrl}`] : []),
   ].join('\n')
 
+  const body = args.shapedBody ?? defaultBody(args.capture)
+
   return [
     '---',
     frontmatter,
@@ -169,22 +220,55 @@ function buildBody(args: {
     '',
     `# ${args.title}`,
     '',
-    '## Capture',
-    args.capture,
-    '',
-    '## When To Use',
-    'TODO — shepherd to fill in during curation.',
-    '',
-    '## Do Not Use When',
-    'TODO — shepherd to fill in during curation.',
-    '',
-    '## Notes',
-    'Experimental capture. Awaiting curation.',
+    body,
     '',
     '## Changelog',
     `- ${args.capturedAt} | ${args.capturedBy} | capture | ${args.description}`,
     '',
   ].join('\n')
+}
+
+function buildAmendment(args: {
+  capturedBy: string
+  capturedAt: string
+  description: string
+  capture: string
+  sourceRepo: string
+  auditUrl?: string
+  shapedBody: string | null
+}): { amendment: string; changelogEntry: string } {
+  const heading = `## Amendment ${args.capturedAt}`
+  const trailer = [
+    `_${args.capturedBy} from ${args.sourceRepo}${args.auditUrl ? ` — [context](${args.auditUrl})` : ''}_`,
+  ].join('\n')
+
+  const body = args.shapedBody
+    ? `${args.shapedBody}\n\n${trailer}`
+    : `${args.capture}\n\n${trailer}`
+
+  const amendment = [heading, '', body, ''].join('\n')
+  const changelogEntry = `- ${args.capturedAt} | ${args.capturedBy} | amend | ${args.description}`
+  return { amendment, changelogEntry }
+}
+
+function applyAmendment(
+  existing: string,
+  amendment: string,
+  changelogEntry: string,
+): string {
+  // Insert amendment section just before the Changelog heading (or at EOF if absent),
+  // and append changelog entry to the Changelog list.
+  const changelogRe = /\n## Changelog\b/
+  const match = existing.match(changelogRe)
+
+  if (!match || match.index === undefined) {
+    // No Changelog — append one along with the amendment.
+    return `${existing.trimEnd()}\n\n${amendment}\n## Changelog\n${changelogEntry}\n`
+  }
+
+  const before = existing.slice(0, match.index).trimEnd()
+  const changelogBlock = existing.slice(match.index).trimEnd()
+  return `${before}\n\n${amendment}\n${changelogBlock}\n${changelogEntry}\n`
 }
 
 function resolveUniquePath(baseSlug: string): { slug: string; path: string } {
@@ -200,45 +284,97 @@ function resolveUniquePath(baseSlug: string): { slug: string; path: string } {
   throw new Error('Too many slug collisions')
 }
 
+function fetchRemote(
+  path: string,
+): { content: string; sha: string; htmlUrl: string } | null {
+  const raw = runSafe('gh', [
+    'api',
+    `repos/${REPO}/contents/${path}`,
+    '--jq',
+    '{content,sha,html_url}',
+  ])
+  if (!raw) return null
+  const parsed = JSON.parse(raw) as {
+    content: string
+    sha: string
+    html_url: string
+  }
+  const content = Buffer.from(parsed.content, 'base64').toString('utf8')
+  return { content, sha: parsed.sha, htmlUrl: parsed.html_url }
+}
+
 function main(): void {
   const args = parseArgs(process.argv.slice(2))
 
   if (args.mode === 'commit') warnIfStale()
 
   const sourceRepo = detectSourceRepo(args.sourceRepo)
-  const baseSlug = slugify(args.capture)
-  if (!baseSlug) throw new Error('Capture produced empty slug')
-
   const description = describe(args.capture)
   const capturedBy = resolveCapturedBy(args.capturedBy)
   const capturedAt = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')
-  const skillTitle = title(args.capture)
+  const shapedBody = readBodyFile(args.bodyFile)
 
-  const { slug, path } = resolveUniquePath(baseSlug)
+  if (args.editPath) {
+    runEdit({
+      editPath: args.editPath,
+      mode: args.mode,
+      outDir: args.outDir,
+      capture: args.capture,
+      description,
+      capturedBy,
+      capturedAt,
+      sourceRepo,
+      auditUrl: args.auditUrl,
+      shapedBody,
+    })
+    return
+  }
 
-  const body = buildBody({
-    slug,
-    title: skillTitle,
+  runNew({
+    mode: args.mode,
+    outDir: args.outDir,
+    capture: args.capture,
     description,
     capturedBy,
     capturedAt,
     sourceRepo,
     auditUrl: args.auditUrl,
-    capture: args.capture,
+    shapedBody,
   })
+}
+
+function runNew(args: {
+  mode: Mode
+  outDir?: string
+  capture: string
+  description: string
+  capturedBy: string
+  capturedAt: string
+  sourceRepo: string
+  auditUrl?: string
+  shapedBody: string | null
+}): void {
+  const baseSlug = slugify(args.capture)
+  if (!baseSlug) throw new Error('Capture produced empty slug')
+  const skillTitle = title(args.capture)
 
   if (args.mode === 'local') {
+    const slug = baseSlug
+    const path = `domains/inbox/skills/${slug}/skill.md`
+    const body = buildNewSkill({ ...args, slug, title: skillTitle })
     const outDir = args.outDir ?? process.cwd()
     const fullPath = resolve(outDir, path)
     mkdirSync(dirname(fullPath), { recursive: true })
     writeFileSync(fullPath, body)
     console.log(`SKILL_PATH=${path}`)
     console.log(`SKILL_SLUG=${slug}`)
-    console.log(`SKILL_DESCRIPTION=${description}`)
+    console.log(`SKILL_DESCRIPTION=${args.description}`)
     console.log(`SKILL_FULL_PATH=${fullPath}`)
     return
   }
 
+  const { slug, path } = resolveUniquePath(baseSlug)
+  const body = buildNewSkill({ ...args, slug, title: skillTitle })
   const contentB64 = Buffer.from(body, 'utf8').toString('base64')
   const response = run('gh', [
     'api',
@@ -246,7 +382,7 @@ function main(): void {
     '--method',
     'PUT',
     '-f',
-    `message=capture(inbox/${slug}): ${description}`,
+    `message=capture(inbox/${slug}): ${args.description}`,
     '-f',
     `content=${contentB64}`,
   ])
@@ -254,9 +390,62 @@ function main(): void {
     commit: { sha: string }
     content: { html_url: string }
   }
-  const short = parsed.commit.sha.slice(0, 7)
-  const url = parsed.content.html_url
-  console.log(`✓ ${path} — ${short} — ${url}`)
+  console.log(`✓ ${path} — ${parsed.commit.sha.slice(0, 7)} — ${parsed.content.html_url}`)
+}
+
+function runEdit(args: {
+  editPath: string
+  mode: Mode
+  outDir?: string
+  capture: string
+  description: string
+  capturedBy: string
+  capturedAt: string
+  sourceRepo: string
+  auditUrl?: string
+  shapedBody: string | null
+}): void {
+  const { amendment, changelogEntry } = buildAmendment(args)
+
+  if (args.mode === 'local') {
+    const outDir = args.outDir ?? process.cwd()
+    const fullPath = resolve(outDir, args.editPath)
+    if (!existsSync(fullPath)) {
+      throw new Error(`--edit target not found locally: ${fullPath}`)
+    }
+    const existing = readFileSync(fullPath, 'utf8')
+    const updated = applyAmendment(existing, amendment, changelogEntry)
+    writeFileSync(fullPath, updated)
+    console.log(`SKILL_PATH=${args.editPath}`)
+    console.log(`SKILL_MODE=edit`)
+    console.log(`SKILL_DESCRIPTION=${args.description}`)
+    console.log(`SKILL_FULL_PATH=${fullPath}`)
+    return
+  }
+
+  const remote = fetchRemote(args.editPath)
+  if (!remote) throw new Error(`--edit target not found: ${args.editPath}`)
+  const updated = applyAmendment(remote.content, amendment, changelogEntry)
+  const contentB64 = Buffer.from(updated, 'utf8').toString('base64')
+  const response = run('gh', [
+    'api',
+    `repos/${REPO}/contents/${args.editPath}`,
+    '--method',
+    'PUT',
+    '-f',
+    `message=amend(${args.editPath}): ${args.description}`,
+    '-f',
+    `content=${contentB64}`,
+    '-f',
+    `sha=${remote.sha}`,
+  ])
+  const parsed = JSON.parse(response) as {
+    commit: { sha: string }
+    content: { html_url: string }
+  }
+  console.log(
+    `✓ ${args.editPath} — ${parsed.commit.sha.slice(0, 7)} — ${parsed.content.html_url}`,
+  )
 }
 
 try {
