@@ -15,9 +15,13 @@
 //   --body-file <path>    Pre-shaped markdown body for the skill (headings below
 //                         the H1 title). Replaces the TODO template when creating
 //                         a new skill; appended as an amendment when editing.
+//   --domain <name>       Route new capture to domains/<name>/skills/<slug>/.
+//                         Required for new captures; agents pick domain at
+//                         capture time alongside shaping and new-vs-edit.
+//                         Fallback to `inbox` emits a follow-up warning.
 //   --edit <path>         Edit an existing skill at <path> (e.g.
 //                         domains/<x>/skills/<slug>/skill.md) instead of creating
-//                         a new one in inbox. Adds a changelog entry and, when
+//                         a new one. Adds a changelog entry and, when
 //                         --body-file is given, an amendment section.
 //
 // Runs on any Node with TypeScript type-stripping support
@@ -39,6 +43,7 @@ interface Args {
   outDir?: string
   bodyFile?: string
   editPath?: string
+  domain?: string
 }
 
 const REPO = 'MajorLift/metamask-extension-skills'
@@ -51,6 +56,7 @@ function parseArgs(argv: string[]): Args {
   let outDir: string | undefined
   let bodyFile: string | undefined
   let editPath: string | undefined
+  let domain: string | undefined
   const positional: string[] = []
 
   for (let i = 0; i < argv.length; i++) {
@@ -82,6 +88,9 @@ function parseArgs(argv: string[]): Args {
       case '--edit':
         editPath = argv[++i]
         break
+      case '--domain':
+        domain = argv[++i]
+        break
       case '--':
         positional.push(...argv.slice(i + 1))
         i = argv.length
@@ -105,6 +114,7 @@ function parseArgs(argv: string[]): Args {
     outDir,
     bodyFile,
     editPath,
+    domain,
   }
 }
 
@@ -271,19 +281,18 @@ function applyAmendment(
   return `${before}\n\n${amendment}\n${changelogBlock}\n${changelogEntry}\n`
 }
 
-function resolveUniquePath(baseSlug: string): {
-  slug: string
-  path: string
-  collided: boolean
-} {
+function resolveUniquePath(
+  baseSlug: string,
+  domain: string,
+): { slug: string; path: string; collided: boolean } {
   let slug = baseSlug
-  let path = `domains/inbox/skills/${slug}/skill.md`
+  let path = `domains/${domain}/skills/${slug}/skill.md`
   for (let n = 2; n <= 20; n++) {
     if (!runSafe('gh', ['api', `repos/${REPO}/contents/${path}`])) {
       return { slug, path, collided: slug !== baseSlug }
     }
     slug = `${baseSlug}-${n}`.slice(0, 40).replace(/-+$/, '')
-    path = `domains/inbox/skills/${slug}/skill.md`
+    path = `domains/${domain}/skills/${slug}/skill.md`
   }
   throw new Error('Too many slug collisions')
 }
@@ -351,6 +360,7 @@ function main(): void {
     sourceRepo,
     auditUrl: args.auditUrl,
     shapedBody,
+    domain: args.domain,
   })
 }
 
@@ -364,6 +374,7 @@ function runNew(args: {
   sourceRepo: string
   auditUrl?: string
   shapedBody: string | null
+  domain?: string
 }): void {
   const baseSlug = slugify(args.capture)
   if (!baseSlug) throw new Error('Capture produced empty slug')
@@ -372,13 +383,20 @@ function runNew(args: {
   const followUps: string[] = []
   if (!args.shapedBody) {
     followUps.push(
-      'Body is TODO placeholders. Shape the body before this stub rots in the inbox.',
+      'Body is TODO placeholders. Shape the body before this stub rots.',
+    )
+  }
+
+  const domain = args.domain ?? 'inbox'
+  if (!args.domain) {
+    followUps.push(
+      "No --domain passed — falling back to 'inbox'. Inbox has no curator; pick a domain at capture so the skill ships to the bundle.",
     )
   }
 
   if (args.mode === 'local') {
     const slug = baseSlug
-    const path = `domains/inbox/skills/${slug}/skill.md`
+    const path = `domains/${domain}/skills/${slug}/skill.md`
     const body = buildNewSkill({ ...args, slug, title: skillTitle })
     const outDir = args.outDir ?? process.cwd()
     const fullPath = resolve(outDir, path)
@@ -392,7 +410,7 @@ function runNew(args: {
     return
   }
 
-  const { slug, path, collided } = resolveUniquePath(baseSlug)
+  const { slug, path, collided } = resolveUniquePath(baseSlug, domain)
   if (collided) {
     followUps.push(
       `Slug collided with existing skill — using '${slug}' instead of '${baseSlug}'. Verify this isn't a near-duplicate before promotion.`,
@@ -406,7 +424,7 @@ function runNew(args: {
     '--method',
     'PUT',
     '-f',
-    `message=capture(inbox/${slug}): ${args.description}`,
+    `message=capture(${domain}/${slug}): ${args.description}`,
     '-f',
     `content=${contentB64}`,
   ])
