@@ -6,18 +6,20 @@
 # sync time — no duplicate files live upstream.
 #
 #   * Skills       → canonical at .agents/skills/<slug>/SKILL.md; shimmed into
-#                    .claude/skills/<slug>/SKILL.md and .cursor/rules/<slug>.mdc
+#                    .claude/skills/<slug>/SKILL.md and .cursor/skills/<slug>/SKILL.md
 #                    (symlinks by default, or copies with --no-symlinks).
+#                    .cursor/skills/ is Cursor's slash-command surface — a skill
+#                    slug that matches its `command:` frontmatter surfaces as `/name`.
 #   * Slash cmds   → a skill opts in by setting `command: <name>` in frontmatter.
-#                    Sync generates .claude/commands/<name>.md (Claude Code slash
-#                    command) and .cursor/rules/<name>.mdc (Cursor rule) from the
-#                    skill body with platform-specific frontmatter.
+#                    Sync generates .claude/commands/<name>.md from the skill body
+#                    with Claude-Code-specific frontmatter. No separate Cursor
+#                    command file — the skill shim is Cursor's slash surface.
 #
 # All generated directories should be gitignored in the consuming repo:
 #     /.agents/skills/
 #     /.claude/skills/
 #     /.claude/commands/
-#     /.cursor/rules/
+#     /.cursor/skills/
 #     /.skills/
 #
 # Modes:
@@ -30,9 +32,8 @@
 # Layout (repo mode):
 #   <target>/.agents/skills/<slug>/SKILL.md    ← canonical (Agent Skills standard)
 #   <target>/.claude/skills/<slug>/SKILL.md    ← shim → ../../../.agents/skills/<slug>/SKILL.md
-#   <target>/.cursor/rules/<slug>.mdc          ← shim → ../../.agents/skills/<slug>/SKILL.md
+#   <target>/.cursor/skills/<slug>/SKILL.md    ← shim → ../../../.agents/skills/<slug>/SKILL.md
 #   <target>/.claude/commands/<cmd>.md         ← generated from skill (frontmatter: command)
-#   <target>/.cursor/rules/<cmd>.mdc           ← generated from skill (frontmatter: command)
 #   <target>/.skills/{remember.sh,patch.sh,sync.sh}  ← shell fallback (copied)
 
 set -euo pipefail
@@ -91,6 +92,9 @@ else
   SKILLS_TOOLS_DIR="$TARGET/.skills"
   [[ -z "$REPO_NAME" ]] && REPO_NAME=$(basename "$(cd "$TARGET" && pwd)")
 fi
+
+CLAUDE_SKILLS_DIR="$CLAUDE_DIR/skills"
+CURSOR_SKILLS_DIR="$CURSOR_DIR/skills"
 
 run() {
   if $DRY_RUN; then
@@ -172,28 +176,9 @@ generate_claude_command() {
   } > "$out"
 }
 
-# generate_cursor_command <skill_file> <cmd_name>
-generate_cursor_command() {
-  local file="$1" cmd="$2" out="$CURSOR_DIR/rules/$2.mdc"
-  local desc; desc=$(read_frontmatter "$file" description)
-  run "mkdir -p '$CURSOR_DIR/rules'"
-  if $DRY_RUN; then
-    echo "DRY: generate Cursor rule → $out"
-    return
-  fi
-  {
-    echo "---"
-    [[ -n "$desc" ]] && echo "description: $desc"
-    echo "alwaysApply: false"
-    echo "---"
-    echo
-    body_after_frontmatter "$file"
-  } > "$out"
-}
-
 # ---------- skills (repo mode only — canonical + shims + generated commands) ----------
 if ! $USER_MODE && [[ -d "$SRC_ROOT/domains" ]]; then
-  run "mkdir -p '$AGENTS_DIR/skills' '$CLAUDE_DIR/skills' '$CURSOR_DIR/rules'"
+  run "mkdir -p '$AGENTS_DIR/skills' '$CLAUDE_SKILLS_DIR' '$CURSOR_SKILLS_DIR'"
 
   FILTER=$(echo "$INCLUDE_MATURITY" | tr ',' '|')
 
@@ -212,19 +197,19 @@ if ! $USER_MODE && [[ -d "$SRC_ROOT/domains" ]]; then
 
     # Shim: .claude/skills/<slug>/SKILL.md → ../../../.agents/skills/<slug>/SKILL.md
     shim "$canonical" \
-         "$CLAUDE_DIR/skills/$slug/SKILL.md" \
+         "$CLAUDE_SKILLS_DIR/$slug/SKILL.md" \
          "../../../.agents/skills/$slug/SKILL.md"
 
-    # Shim: .cursor/rules/<slug>.mdc → ../../.agents/skills/<slug>/SKILL.md
+    # Shim: .cursor/skills/<slug>/SKILL.md → ../../../.agents/skills/<slug>/SKILL.md
     shim "$canonical" \
-         "$CURSOR_DIR/rules/$slug.mdc" \
-         "../../.agents/skills/$slug/SKILL.md"
+         "$CURSOR_SKILLS_DIR/$slug/SKILL.md" \
+         "../../../.agents/skills/$slug/SKILL.md"
 
-    # Generate platform-specific slash command adapters if skill opts in.
+    # Generate Claude Code slash-command adapter if skill opts in.
+    # Cursor's slash surface is already .cursor/skills/ — no separate file needed.
     cmd=$(read_frontmatter "$file" command)
     if [[ -n "$cmd" ]]; then
       generate_claude_command "$file" "$cmd"
-      generate_cursor_command "$file" "$cmd"
     fi
   done
 fi
@@ -238,7 +223,8 @@ if ! $USER_MODE && ! $DRY_RUN; then
   Add to ${REPO_NAME}/.gitignore if not already present:
     /.agents/skills/
     /.claude/skills/
-    /.cursor/rules/
+    /.claude/commands/
+    /.cursor/skills/
     /.skills/
   (Generated on every sync. Never hand-edit — edit source in metamask-extension-skills.)
 EOF
