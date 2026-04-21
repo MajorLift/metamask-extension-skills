@@ -1,0 +1,22 @@
+---
+description: /remember — capture a skill into metamask-extension-skills
+alwaysApply: false
+---
+
+# /remember handler
+
+When the user types `/remember X` in chat:
+
+1. Treat X as a raw capture.
+2. If `.skills/remember.sh` exists in the workspace, run it via terminal:
+   ```
+   .skills/remember.sh "X"
+   ```
+   Report the one-line output verbatim.
+3. If `.skills/remember.sh` does NOT exist, fall back to generating the `gh api` PUT call following the procedure in `MajorLift/metamask-extension-skills/commands/remember.md`. Show the user the command to run.
+4. Do not ask "are you sure?" or "which domain?". One invocation, one output.
+
+## On failure
+- `gh auth` error → instruct user to run `gh auth login`.
+- Slug collision → append `-2`, `-3`, etc.
+- Network failure → surface the error verbatim, do not retry silently.
