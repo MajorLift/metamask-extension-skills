@@ -2,16 +2,38 @@
 # remember.sh — capture a skill-shaped learning as an experimental skill
 # in MajorLift/metamask-extension-skills under domains/inbox/.
 #
-# Usage: remember.sh "capture text"
+# Usage: remember.sh [flags] "capture text"
+#
+# Flags:
+#   --captured-by <user>  Override author (default: gh api user --jq .login)
+#   --source-repo <name>  Override source repo (default: basename of git toplevel)
+#   --audit-url <url>     Optional audit backlink (e.g. PR comment URL)
 #
 # Requires: gh CLI authenticated with write access to the skills repo.
 
 set -euo pipefail
 
-[[ $# -lt 1 ]] && { echo "Usage: $0 \"capture text\"" >&2; exit 1; }
+REPO="MajorLift/metamask-extension-skills"
+CAPTURED_BY=""
+SOURCE_REPO_OVERRIDE=""
+AUDIT_URL=""
+POSITIONAL=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --captured-by) CAPTURED_BY="$2"; shift 2 ;;
+    --source-repo) SOURCE_REPO_OVERRIDE="$2"; shift 2 ;;
+    --audit-url)   AUDIT_URL="$2"; shift 2 ;;
+    --) shift; POSITIONAL+=("$@"); break ;;
+    -*) echo "Unknown flag: $1" >&2; exit 1 ;;
+    *) POSITIONAL+=("$1"); shift ;;
+  esac
+done
+
+set -- "${POSITIONAL[@]}"
+[[ $# -lt 1 ]] && { echo "Usage: $0 [--captured-by USER] [--source-repo REPO] [--audit-url URL] \"capture text\"" >&2; exit 1; }
 
 CAPTURE="$*"
-REPO="MajorLift/metamask-extension-skills"
 
 # Staleness warning (non-blocking).
 if [[ -f .skills/VERSION ]]; then
@@ -31,8 +53,12 @@ if [[ -f .skills/VERSION ]]; then
 fi
 
 # Detect source repo (where the learning occurred).
-SOURCE_REPO=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo "unknown")
-[[ -z "$SOURCE_REPO" ]] && SOURCE_REPO="unknown"
+if [[ -n "$SOURCE_REPO_OVERRIDE" ]]; then
+  SOURCE_REPO="$SOURCE_REPO_OVERRIDE"
+else
+  SOURCE_REPO=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo "unknown")
+  [[ -z "$SOURCE_REPO" ]] && SOURCE_REPO="unknown"
+fi
 
 # Slugify: lowercase, non-alphanumeric → hyphen, collapse, trim, truncate to 40.
 SLUG=$(echo "$CAPTURE" \
@@ -46,22 +72,29 @@ SLUG=$(echo "$CAPTURE" \
 # One-line description, no embedded newlines.
 DESCRIPTION=$(echo "$CAPTURE" | tr '\n' ' ' | cut -c1-80 | sed 's/[[:space:]]*$//')
 
-# Author + timestamp. GH_USER avoids clobbering the shell $USER env var.
-GH_USER=$(gh api user --jq .login)
+# Author + timestamp. Falls back to the authenticated gh user if no override given.
+if [[ -z "$CAPTURED_BY" ]]; then
+  CAPTURED_BY=$(gh api user --jq .login)
+fi
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 # Title: first sentence, trimmed.
 TITLE=$(echo "$CAPTURE" | head -c 100 | sed -E 's/\.$//' | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g; s/^[[:space:]]+|[[:space:]]+$//g')
 
-BODY=$(cat <<EOF
----
-maturity: experimental
+# Build frontmatter. audit_url only emitted when --audit-url is set.
+FRONTMATTER="maturity: experimental
 name: ${SLUG}
 description: ${DESCRIPTION}
 origin: captured
-captured_by: ${GH_USER}
+captured_by: ${CAPTURED_BY}
 captured_at: ${NOW}
-source_repo: ${SOURCE_REPO}
+source_repo: ${SOURCE_REPO}"
+[[ -n "$AUDIT_URL" ]] && FRONTMATTER="${FRONTMATTER}
+audit_url: ${AUDIT_URL}"
+
+BODY=$(cat <<EOF
+---
+${FRONTMATTER}
 ---
 
 # ${TITLE}
@@ -79,7 +112,7 @@ TODO — shepherd to fill in during curation.
 Experimental capture. Awaiting curation.
 
 ## Changelog
-- ${NOW} | ${GH_USER} | capture | ${DESCRIPTION}
+- ${NOW} | ${CAPTURED_BY} | capture | ${DESCRIPTION}
 EOF
 )
 
