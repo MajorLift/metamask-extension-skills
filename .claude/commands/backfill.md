@@ -1,6 +1,6 @@
 ---
 name: backfill
-description: Backfill capture candidates from the current session — skill-shaped learnings that went uncaptured. Present candidates for user acceptance; route accepted ones to /remember.
+description: Backfill capture candidates from the current session — corrections, decisions, patterns, and preferences that went uncaptured. Present candidates for user acceptance; route accepted ones to /remember.
 ---
 
 # /backfill
@@ -17,22 +17,45 @@ Scan the current session for skill-shaped learnings that went uncaptured, presen
 
 - Session is short (< 20 turns) — insufficient signal.
 - Just did a `/backfill` within the last 10 turns.
-- Session is purely exploratory (brainstorming, analysis) with no concrete interventions.
+- Session was purely exploratory with no decisions, corrections, or patterns that landed.
 
 ## Procedure
 
 1. **Scan last 30–50 turns** of the current session.
 
-2. **Identify candidates using these signals:**
+2. **Identify candidates across all learning types:**
 
+   **Corrections and constraints**
    | Signal | Confidence |
    |---|---|
-   | User said "actually", "no", "instead", "next time", "never", "always" | High |
-   | Same topic corrected twice in the session | High |
+   | User corrected a direction — explicit ("actually no", "instead", "stop") | High |
+   | Same approach rejected twice in session | High |
    | Agent violated a rule already in context | High |
-   | User narrated a workaround for a known-broken thing | Medium |
-   | User pushed back then accepted a new approach | Medium |
-   | Style preference / taste signal | Low |
+   | User revealed a constraint agent didn't know ("we can't X because Y") | High |
+
+   **Decisions and rationale**
+   | Signal | Confidence |
+   |---|---|
+   | User made a non-obvious choice and explained why | High |
+   | Approach was debated then settled — settled approach has durable value | Medium |
+   | Trade-off resolved in a reusable way | Medium |
+
+   **Patterns and approaches that proved useful**
+   | Signal | Confidence |
+   |---|---|
+   | Agent tried an approach, user accepted without modification — non-obvious approach | Medium |
+   | User narrated a workflow or technique that worked | Medium |
+   | Technical gotcha discovered or worked around | Medium |
+   | Tooling, library, or API behavior clarified through trial | Medium |
+
+   **Preferences revealed through the work**
+   | Signal | Confidence |
+   |---|---|
+   | User consistently chose one pattern over alternatives across multiple turns | Medium |
+   | Style or taste signal — accepted framing, phrasing, or structure without comment | Low |
+   | Terminology or naming preference revealed | Low |
+
+   Ignore: exploratory threads closed without conclusion, reasoning steps with no outcome, restated context already in existing skills.
 
 3. **For each candidate produce:** one-line description, confidence tag, source turn reference.
 
