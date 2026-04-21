@@ -5,9 +5,12 @@
 # Platform adapters (.claude/, .cursor/, .agents/) are generated locally at
 # sync time — no duplicate files live upstream.
 #
-#   * Skills       → canonical at .agents/skills/<slug>/SKILL.md; shimmed into
-#                    .claude/skills/<slug>/SKILL.md and .cursor/skills/<slug>/SKILL.md
-#                    (symlinks by default, or copies with --no-symlinks).
+#   * Skills       → canonical at .agents/skills/shared/<slug>/SKILL.md; shimmed
+#                    into .claude/skills/<slug>/SKILL.md and
+#                    .cursor/skills/<slug>/SKILL.md (symlinks by default, or
+#                    copies with --no-symlinks). The `shared/` subdir isolates
+#                    synced content from consumer-authored skills at
+#                    .agents/skills/<slug>/.
 #                    .cursor/skills/ is Cursor's slash-command surface — a skill
 #                    slug that matches its `command:` frontmatter surfaces as `/name`.
 #   * Slash cmds   → a skill opts in by setting `command: <name>` in frontmatter.
@@ -16,7 +19,7 @@
 #                    command file — the skill shim is Cursor's slash surface.
 #
 # All generated directories should be gitignored in the consuming repo:
-#     /.agents/skills/
+#     /.agents/skills/shared/
 #     /.claude/skills/
 #     /.claude/commands/
 #     /.cursor/skills/
@@ -30,11 +33,11 @@
 #   --target <path> --no-symlinks  copy files instead of symlinking shims
 #
 # Layout (repo mode):
-#   <target>/.agents/skills/<slug>/SKILL.md    ← canonical (Agent Skills standard)
-#   <target>/.claude/skills/<slug>/SKILL.md    ← shim → ../../../.agents/skills/<slug>/SKILL.md
-#   <target>/.cursor/skills/<slug>/SKILL.md    ← shim → ../../../.agents/skills/<slug>/SKILL.md
-#   <target>/.claude/commands/<cmd>.md         ← generated from skill (frontmatter: command)
-#   <target>/.skills/{remember.sh,patch.sh,sync.sh}  ← shell fallback (copied)
+#   <target>/.agents/skills/shared/<slug>/SKILL.md    ← canonical (Agent Skills standard, synced)
+#   <target>/.claude/skills/<slug>/SKILL.md           ← shim → ../../../.agents/skills/shared/<slug>/SKILL.md
+#   <target>/.cursor/skills/<slug>/SKILL.md           ← shim → ../../../.agents/skills/shared/<slug>/SKILL.md
+#   <target>/.claude/commands/<cmd>.md                ← generated from skill (frontmatter: command)
+#   <target>/.skills/{remember.sh,patch.sh,sync.sh}   ← shell fallback (copied)
 
 set -euo pipefail
 
@@ -176,41 +179,45 @@ generate_claude_command() {
   } > "$out"
 }
 
-# ---------- skills (repo mode only — canonical + shims + generated commands) ----------
-if ! $USER_MODE && [[ -d "$SRC_ROOT/domains" ]]; then
-  run "mkdir -p '$AGENTS_DIR/skills' '$CLAUDE_SKILLS_DIR' '$CURSOR_SKILLS_DIR'"
+FILTER=$(echo "$INCLUDE_MATURITY" | tr ',' '|')
 
-  FILTER=$(echo "$INCLUDE_MATURITY" | tr ',' '|')
+# ---------- slash commands (both repo and user modes — --user installs commands at ~/.claude/commands/) ----------
+if [[ -d "$SRC_ROOT/domains" ]]; then
+  find "$SRC_ROOT/domains" -name 'skill.md' | while read -r file; do
+    mat=$(read_frontmatter "$file" maturity)
+    [[ -z "$mat" ]] && mat="experimental"
+    echo "$mat" | grep -qE "^($FILTER)$" || continue
+    cmd=$(read_frontmatter "$file" command)
+    [[ -n "$cmd" ]] && generate_claude_command "$file" "$cmd"
+  done
+fi
+
+# ---------- skills (repo mode only — canonical + shims) ----------
+if ! $USER_MODE && [[ -d "$SRC_ROOT/domains" ]]; then
+  run "mkdir -p '$AGENTS_DIR/skills/shared' '$CLAUDE_SKILLS_DIR' '$CURSOR_SKILLS_DIR'"
 
   find "$SRC_ROOT/domains" -name 'skill.md' | while read -r file; do
     mat=$(read_frontmatter "$file" maturity)
     [[ -z "$mat" ]] && mat="experimental"
-    if ! echo "$mat" | grep -qE "^($FILTER)$"; then
-      continue
-    fi
+    echo "$mat" | grep -qE "^($FILTER)$" || continue
     slug=$(basename "$(dirname "$file")")
 
-    # Canonical: .agents/skills/<slug>/SKILL.md (Agent Skills standard naming)
-    canonical="$AGENTS_DIR/skills/$slug/SKILL.md"
-    run "mkdir -p '$AGENTS_DIR/skills/$slug'"
+    # Canonical: .agents/skills/shared/<slug>/SKILL.md
+    # The shared/ subdir isolates synced content from consumer-authored skills
+    # that may live alongside at .agents/skills/<slug>/.
+    canonical="$AGENTS_DIR/skills/shared/$slug/SKILL.md"
+    run "mkdir -p '$AGENTS_DIR/skills/shared/$slug'"
     run "cp '$file' '$canonical'"
 
-    # Shim: .claude/skills/<slug>/SKILL.md → ../../../.agents/skills/<slug>/SKILL.md
+    # Shim: .claude/skills/<slug>/SKILL.md → ../../../.agents/skills/shared/<slug>/SKILL.md
     shim "$canonical" \
          "$CLAUDE_SKILLS_DIR/$slug/SKILL.md" \
-         "../../../.agents/skills/$slug/SKILL.md"
+         "../../../.agents/skills/shared/$slug/SKILL.md"
 
-    # Shim: .cursor/skills/<slug>/SKILL.md → ../../../.agents/skills/<slug>/SKILL.md
+    # Shim: .cursor/skills/<slug>/SKILL.md → ../../../.agents/skills/shared/<slug>/SKILL.md
     shim "$canonical" \
          "$CURSOR_SKILLS_DIR/$slug/SKILL.md" \
-         "../../../.agents/skills/$slug/SKILL.md"
-
-    # Generate Claude Code slash-command adapter if skill opts in.
-    # Cursor's slash surface is already .cursor/skills/ — no separate file needed.
-    cmd=$(read_frontmatter "$file" command)
-    if [[ -n "$cmd" ]]; then
-      generate_claude_command "$file" "$cmd"
-    fi
+         "../../../.agents/skills/shared/$slug/SKILL.md"
   done
 fi
 
@@ -221,7 +228,7 @@ if ! $USER_MODE && ! $DRY_RUN; then
   cat <<EOF
 
   Add to ${REPO_NAME}/.gitignore if not already present:
-    /.agents/skills/
+    /.agents/skills/shared/
     /.claude/skills/
     /.claude/commands/
     /.cursor/skills/
