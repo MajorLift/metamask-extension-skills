@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
 # install.sh — install skills into a consuming repo using the Agent Skills standard.
 #
-# Canonical location: .agents/skills/<slug>/SKILL.md
-# Adapter paths (.claude/skills/<slug>/SKILL.md, .cursor/rules/<slug>.mdc) are
-# generated as symlink shims pointing to the canonical file — no content
-# duplication. On filesystems without symlink support, pass --no-symlinks to
-# fall back to file copies.
+# Single source of truth: domains/<domain>/skills/<slug>/skill.md
+# Platform adapters (.claude/, .cursor/, .agents/) are generated locally at
+# sync time — no duplicate files live upstream.
+#
+#   * Skills       → canonical at .agents/skills/<slug>/SKILL.md; shimmed into
+#                    .claude/skills/<slug>/SKILL.md and .cursor/rules/<slug>.mdc
+#                    (symlinks by default, or copies with --no-symlinks).
+#   * Slash cmds   → a skill opts in by setting `command: <name>` in frontmatter.
+#                    Sync generates .claude/commands/<name>.md (Claude Code slash
+#                    command) and .cursor/rules/<name>.mdc (Cursor rule) from the
+#                    skill body with platform-specific frontmatter.
 #
 # All generated directories should be gitignored in the consuming repo:
 #     /.agents/skills/
 #     /.claude/skills/
+#     /.claude/commands/
 #     /.cursor/rules/
 #     /.skills/
 #
@@ -24,12 +31,9 @@
 #   <target>/.agents/skills/<slug>/SKILL.md    ← canonical (Agent Skills standard)
 #   <target>/.claude/skills/<slug>/SKILL.md    ← shim → ../../../.agents/skills/<slug>/SKILL.md
 #   <target>/.cursor/rules/<slug>.mdc          ← shim → ../../.agents/skills/<slug>/SKILL.md
-#   <target>/.claude/commands/<name>.md        ← /remember, /patch, /backfill (copied)
-#   <target>/.cursor/rules/<name>.mdc          ← Cursor fallbacks (copied)
+#   <target>/.claude/commands/<cmd>.md         ← generated from skill (frontmatter: command)
+#   <target>/.cursor/rules/<cmd>.mdc           ← generated from skill (frontmatter: command)
 #   <target>/.skills/{remember.sh,patch.sh,sync.sh}  ← shell fallback (copied)
-#
-# User mode (--user) writes only the command specs + shell tools into
-# ~/.claude, ~/.cursor, ~/.skills. Skills are repo-scoped only.
 
 set -euo pipefail
 
@@ -125,23 +129,76 @@ fi
 
 $TOOLS_ONLY && { echo "✓ tools-only install complete"; exit 0; }
 
-# ---------- command specs (copied — per-tool, no canonical) ----------
-if [[ -d "$SRC_ROOT/commands" ]]; then
-  run "mkdir -p '$CLAUDE_DIR/commands' '$CURSOR_DIR/rules'"
-  for cmd in remember patch backfill; do
-    [[ -f "$SRC_ROOT/commands/$cmd.md"         ]] && run "cp '$SRC_ROOT/commands/$cmd.md'         '$CLAUDE_DIR/commands/$cmd.md'"
-    [[ -f "$SRC_ROOT/commands/$cmd.cursor.mdc" ]] && run "cp '$SRC_ROOT/commands/$cmd.cursor.mdc' '$CURSOR_DIR/rules/$cmd.mdc'"
-  done
-fi
+# read_frontmatter <file> <key> — prints the value of a top-level frontmatter key.
+# Only reads the first YAML block (between the first two '---' lines).
+read_frontmatter() {
+  awk -v key="$2" '
+    /^---$/ { c++; if (c == 2) exit; next }
+    c == 1 {
+      if (match($0, "^" key ":[[:space:]]*")) {
+        v = substr($0, RLENGTH + 1)
+        sub(/[[:space:]]+$/, "", v)
+        print v; exit
+      }
+    }
+  ' "$1"
+}
 
-# ---------- skills (repo mode only — canonical + shims) ----------
+# body_after_frontmatter <file> — prints body lines below the frontmatter block.
+body_after_frontmatter() {
+  awk '
+    !started && /^---$/ { c++; if (c == 2) { started=1; next } next }
+    started { print }
+  ' "$1"
+}
+
+# generate_claude_command <skill_file> <cmd_name>
+generate_claude_command() {
+  local file="$1" cmd="$2" out="$CLAUDE_DIR/commands/$2.md"
+  local desc; desc=$(read_frontmatter "$file" description)
+  local hint; hint=$(read_frontmatter "$file" argument-hint)
+  run "mkdir -p '$CLAUDE_DIR/commands'"
+  if $DRY_RUN; then
+    echo "DRY: generate Claude command → $out"
+    return
+  fi
+  {
+    echo "---"
+    [[ -n "$desc" ]] && echo "description: $desc"
+    [[ -n "$hint" ]] && echo "argument-hint: $hint"
+    echo "---"
+    echo
+    body_after_frontmatter "$file"
+  } > "$out"
+}
+
+# generate_cursor_command <skill_file> <cmd_name>
+generate_cursor_command() {
+  local file="$1" cmd="$2" out="$CURSOR_DIR/rules/$2.mdc"
+  local desc; desc=$(read_frontmatter "$file" description)
+  run "mkdir -p '$CURSOR_DIR/rules'"
+  if $DRY_RUN; then
+    echo "DRY: generate Cursor rule → $out"
+    return
+  fi
+  {
+    echo "---"
+    [[ -n "$desc" ]] && echo "description: $desc"
+    echo "alwaysApply: false"
+    echo "---"
+    echo
+    body_after_frontmatter "$file"
+  } > "$out"
+}
+
+# ---------- skills (repo mode only — canonical + shims + generated commands) ----------
 if ! $USER_MODE && [[ -d "$SRC_ROOT/domains" ]]; then
   run "mkdir -p '$AGENTS_DIR/skills' '$CLAUDE_DIR/skills' '$CURSOR_DIR/rules'"
 
   FILTER=$(echo "$INCLUDE_MATURITY" | tr ',' '|')
 
   find "$SRC_ROOT/domains" -name 'skill.md' | while read -r file; do
-    mat=$(awk '/^maturity: */{print $2; exit}' "$file" 2>/dev/null || echo "")
+    mat=$(read_frontmatter "$file" maturity)
     [[ -z "$mat" ]] && mat="experimental"
     if ! echo "$mat" | grep -qE "^($FILTER)$"; then
       continue
@@ -162,6 +219,13 @@ if ! $USER_MODE && [[ -d "$SRC_ROOT/domains" ]]; then
     shim "$canonical" \
          "$CURSOR_DIR/rules/$slug.mdc" \
          "../../.agents/skills/$slug/SKILL.md"
+
+    # Generate platform-specific slash command adapters if skill opts in.
+    cmd=$(read_frontmatter "$file" command)
+    if [[ -n "$cmd" ]]; then
+      generate_claude_command "$file" "$cmd"
+      generate_cursor_command "$file" "$cmd"
+    fi
   done
 fi
 
