@@ -1,0 +1,30 @@
+---
+description: /backfill — surface missed capture candidates from the current session
+alwaysApply: false
+---
+
+# /backfill handler
+
+When the user types `/backfill` in chat:
+
+1. Scan the last 30–50 turns of the current conversation.
+2. Identify skill-shaped capture candidates using these signals:
+   - User said "actually", "no", "instead", "next time", "never", "always" (HIGH)
+   - Same topic corrected twice (HIGH)
+   - Agent violated a rule already in context (HIGH)
+   - User narrated a workaround (MEDIUM)
+   - User pushed back then accepted new approach (MEDIUM)
+   - Style preference signal (LOW)
+3. Present up to 5 candidates as a numbered list with confidence tags and source turn references.
+4. Ask: `Accept? [all | none | 1,2 | edit N: <revision>]`
+5. For accepted candidates, invoke `/remember` for each (via `.skills/remember.sh` or `gh api` fallback).
+6. Report each result on its own line.
+
+## Rules
+- Never auto-persist. Always show candidates first, wait for user choice.
+- Max 5 candidates. Top by confidence.
+- Skip candidates that duplicate skills already captured in this session.
+- If user rejects a candidate, do not resurface it in this session.
+
+## This is a manual command in v1
+Auto-invoke at session end is Phase 1.5.
