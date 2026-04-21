@@ -8,8 +8,11 @@
 #   --captured-by <user>  Override author (default: gh api user --jq .login)
 #   --source-repo <name>  Override source repo (default: basename of git toplevel)
 #   --audit-url <url>     Optional audit backlink (e.g. PR comment URL)
+#   --mode <commit|local> commit = PUT to skills repo (default)
+#                         local  = write skill.md under --out-dir, no network write
+#   --out-dir <dir>       Root dir for --mode local (default: current dir)
 #
-# Requires: gh CLI authenticated with write access to the skills repo.
+# Requires: gh CLI authenticated with write access to the skills repo (commit mode only).
 
 set -euo pipefail
 
@@ -17,6 +20,8 @@ REPO="MajorLift/metamask-extension-skills"
 CAPTURED_BY=""
 SOURCE_REPO_OVERRIDE=""
 AUDIT_URL=""
+MODE="commit"
+OUT_DIR=""
 POSITIONAL=()
 
 while [[ $# -gt 0 ]]; do
@@ -24,6 +29,8 @@ while [[ $# -gt 0 ]]; do
     --captured-by) CAPTURED_BY="$2"; shift 2 ;;
     --source-repo) SOURCE_REPO_OVERRIDE="$2"; shift 2 ;;
     --audit-url)   AUDIT_URL="$2"; shift 2 ;;
+    --mode)        MODE="$2"; shift 2 ;;
+    --out-dir)     OUT_DIR="$2"; shift 2 ;;
     --) shift; POSITIONAL+=("$@"); break ;;
     -*) echo "Unknown flag: $1" >&2; exit 1 ;;
     *) POSITIONAL+=("$1"); shift ;;
@@ -31,12 +38,17 @@ while [[ $# -gt 0 ]]; do
 done
 
 set -- "${POSITIONAL[@]}"
-[[ $# -lt 1 ]] && { echo "Usage: $0 [--captured-by USER] [--source-repo REPO] [--audit-url URL] \"capture text\"" >&2; exit 1; }
+[[ $# -lt 1 ]] && { echo "Usage: $0 [flags] \"capture text\"" >&2; exit 1; }
+
+case "$MODE" in
+  commit|local) ;;
+  *) echo "Error: --mode must be 'commit' or 'local' (got '$MODE')" >&2; exit 1 ;;
+esac
 
 CAPTURE="$*"
 
-# Staleness warning (non-blocking).
-if [[ -f .skills/VERSION ]]; then
+# Staleness warning (non-blocking, commit mode only).
+if [[ "$MODE" == "commit" && -f .skills/VERSION ]]; then
   SYNCED_AT=$(grep '^synced_at=' .skills/VERSION | cut -d= -f2 || echo "")
   if [[ -n "$SYNCED_AT" ]]; then
     if date -j >/dev/null 2>&1; then
@@ -119,7 +131,7 @@ EOF
 PATH_IN_REPO="domains/inbox/skills/${SLUG}/skill.md"
 BASE_SLUG="$SLUG"
 
-# Handle slug collision: always increment from BASE_SLUG, never chain suffixes.
+# Handle slug collision by checking the remote (authoritative) contents API.
 N=2
 while gh api "repos/${REPO}/contents/${PATH_IN_REPO}" >/dev/null 2>&1; do
   NEW_SLUG=$(echo "${BASE_SLUG}-${N}" | cut -c1-40 | sed -E 's/-+$//')
@@ -130,6 +142,21 @@ while gh api "repos/${REPO}/contents/${PATH_IN_REPO}" >/dev/null 2>&1; do
   (( N > 20 )) && { echo "Error: too many slug collisions" >&2; exit 1; }
 done
 
+# Local mode: write to filesystem, emit shell-parseable metadata on stdout.
+if [[ "$MODE" == "local" ]]; then
+  [[ -z "$OUT_DIR" ]] && OUT_DIR="$(pwd)"
+  FULL_PATH="${OUT_DIR}/${PATH_IN_REPO}"
+  mkdir -p "$(dirname "$FULL_PATH")"
+  printf '%s' "$BODY" > "$FULL_PATH"
+  # Machine-readable output: caller evals or greps these.
+  echo "SKILL_PATH=${PATH_IN_REPO}"
+  echo "SKILL_SLUG=${SLUG}"
+  echo "SKILL_DESCRIPTION=${DESCRIPTION}"
+  echo "SKILL_FULL_PATH=${FULL_PATH}"
+  exit 0
+fi
+
+# Commit mode (default): PUT to contents API.
 CONTENT_B64=$(printf '%s' "$BODY" | base64)
 
 RESPONSE=$(gh api "repos/${REPO}/contents/${PATH_IN_REPO}" \
