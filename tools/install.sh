@@ -40,7 +40,7 @@ TOOLS_ONLY=false
 DRY_RUN=false
 NO_SYMLINKS=false
 REPO_NAME=""
-INCLUDE_MATURITY="stable"  # comma-separated; override with --include-maturity
+INCLUDE_MATURITY="stable,experimental,draft"  # override with --include-maturity
 
 usage() {
   cat <<EOF
@@ -52,8 +52,9 @@ Options:
   --dry-run               preview actions, write nothing
   --no-symlinks           copy shims instead of symlinking (Windows / no-symlink FS)
   --repo <name>           repo name (inferred from target basename)
-  --include-maturity <l>  comma list of maturity tiers to include (default: stable)
-                          e.g. 'stable,draft' to include in-review skills
+  --include-maturity <l>  comma list of maturity tiers to include
+                          (default: stable,experimental,draft — narrow to
+                          'stable' once the catalog has promoted skills)
 EOF
   exit 1
 }
