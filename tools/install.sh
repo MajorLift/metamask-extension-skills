@@ -188,7 +188,9 @@ if [[ -d "$SRC_ROOT/domains" ]]; then
     [[ -z "$mat" ]] && mat="experimental"
     echo "$mat" | grep -qE "^($FILTER)$" || continue
     cmd=$(read_frontmatter "$file" command)
-    [[ -n "$cmd" ]] && generate_claude_command "$file" "$cmd"
+    if [[ -n "$cmd" ]]; then
+      generate_claude_command "$file" "$cmd"
+    fi
   done
 fi
 
