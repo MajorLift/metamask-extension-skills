@@ -271,17 +271,28 @@ function applyAmendment(
   return `${before}\n\n${amendment}\n${changelogBlock}\n${changelogEntry}\n`
 }
 
-function resolveUniquePath(baseSlug: string): { slug: string; path: string } {
+function resolveUniquePath(baseSlug: string): {
+  slug: string
+  path: string
+  collided: boolean
+} {
   let slug = baseSlug
   let path = `domains/inbox/skills/${slug}/skill.md`
   for (let n = 2; n <= 20; n++) {
     if (!runSafe('gh', ['api', `repos/${REPO}/contents/${path}`])) {
-      return { slug, path }
+      return { slug, path, collided: slug !== baseSlug }
     }
     slug = `${baseSlug}-${n}`.slice(0, 40).replace(/-+$/, '')
     path = `domains/inbox/skills/${slug}/skill.md`
   }
   throw new Error('Too many slug collisions')
+}
+
+function emitFollowUps(followUps: string[]): void {
+  if (followUps.length === 0) return
+  console.log('')
+  console.log('Follow-ups:')
+  for (const item of followUps) console.log(`- ${item}`)
 }
 
 function fetchRemote(
@@ -358,6 +369,13 @@ function runNew(args: {
   if (!baseSlug) throw new Error('Capture produced empty slug')
   const skillTitle = title(args.capture)
 
+  const followUps: string[] = []
+  if (!args.shapedBody) {
+    followUps.push(
+      'Body is TODO placeholders. Shape the body before this stub rots in the inbox.',
+    )
+  }
+
   if (args.mode === 'local') {
     const slug = baseSlug
     const path = `domains/inbox/skills/${slug}/skill.md`
@@ -370,10 +388,16 @@ function runNew(args: {
     console.log(`SKILL_SLUG=${slug}`)
     console.log(`SKILL_DESCRIPTION=${args.description}`)
     console.log(`SKILL_FULL_PATH=${fullPath}`)
+    emitFollowUps(followUps)
     return
   }
 
-  const { slug, path } = resolveUniquePath(baseSlug)
+  const { slug, path, collided } = resolveUniquePath(baseSlug)
+  if (collided) {
+    followUps.push(
+      `Slug collided with existing skill — using '${slug}' instead of '${baseSlug}'. Verify this isn't a near-duplicate before promotion.`,
+    )
+  }
   const body = buildNewSkill({ ...args, slug, title: skillTitle })
   const contentB64 = Buffer.from(body, 'utf8').toString('base64')
   const response = run('gh', [
@@ -391,6 +415,7 @@ function runNew(args: {
     content: { html_url: string }
   }
   console.log(`✓ ${path} — ${parsed.commit.sha.slice(0, 7)} — ${parsed.content.html_url}`)
+  emitFollowUps(followUps)
 }
 
 function runEdit(args: {
@@ -406,6 +431,12 @@ function runEdit(args: {
   shapedBody: string | null
 }): void {
   const { amendment, changelogEntry } = buildAmendment(args)
+  const followUps: string[] = []
+  if (!args.shapedBody) {
+    followUps.push(
+      'Amendment body is only the capture one-liner. Consider whether parent sections need updating.',
+    )
+  }
 
   if (args.mode === 'local') {
     const outDir = args.outDir ?? process.cwd()
@@ -420,6 +451,7 @@ function runEdit(args: {
     console.log(`SKILL_MODE=edit`)
     console.log(`SKILL_DESCRIPTION=${args.description}`)
     console.log(`SKILL_FULL_PATH=${fullPath}`)
+    emitFollowUps(followUps)
     return
   }
 
@@ -446,6 +478,7 @@ function runEdit(args: {
   console.log(
     `✓ ${args.editPath} — ${parsed.commit.sha.slice(0, 7)} — ${parsed.content.html_url}`,
   )
+  emitFollowUps(followUps)
 }
 
 try {
