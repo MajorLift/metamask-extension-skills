@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+# post-merge — auto-refresh agent skills when stale.
+#
+# Drop this file into `.husky/post-merge` of a consuming repo and
+# `chmod +x`. Engineers must opt in once per clone with the repo's
+# hook installer (e.g. `yarn githooks:install`).
+#
+# Behavior:
+#   - Fires after `git pull` / `git merge`.
+#   - No-op if `.skills/VERSION` was synced <STALE_DAYS days ago.
+#   - Runs `yarn skills:sync` otherwise.
+#   - Set SKILLS_SKIP_AUTOSYNC=1 in your shell to disable.
+
+. "$(dirname -- "$0")/_/husky.sh"
+
+[ -n "$SKILLS_SKIP_AUTOSYNC" ] && exit 0
+
+STALE_DAYS=7
+
+# Node-based freshness check — portable across macOS / Linux / CI runners.
+# Exits 0 if fresh, 1 if stale or missing.
+node -e "
+const fs = require('fs');
+const path = '.skills/VERSION';
+if (!fs.existsSync(path)) process.exit(1);
+const m = fs.readFileSync(path, 'utf8').match(/synced_at=(\S+)/);
+if (!m) process.exit(1);
+const ageDays = (Date.now() - Date.parse(m[1])) / 86400000;
+process.exit(ageDays < $STALE_DAYS ? 0 : 1);
+" 2>/dev/null && exit 0
+
+echo "→ agent skills stale, refreshing (yarn skills:sync)"
+yarn skills:sync || echo "  (sync failed — run 'yarn skills:sync' manually)"
