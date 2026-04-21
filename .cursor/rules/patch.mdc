@@ -1,0 +1,24 @@
+---
+description: /patch — correct or extend an existing skill in metamask-extension-skills
+alwaysApply: false
+---
+
+# /patch handler
+
+When the user types `/patch X` or `/patch {slug} X` in chat:
+
+1. Resolve target skill:
+   - `/patch {slug} X` → slug is explicit.
+   - `/patch X` alone → infer from session context (most recently loaded skill). Ask if ambiguous.
+2. If `.skills/patch.sh` exists in the workspace, run it via terminal:
+   ```
+   .skills/patch.sh {slug} "X"
+   ```
+   Report the one-line output verbatim.
+3. If `.skills/patch.sh` does NOT exist, fetch the skill file via `gh api`, propose a diff, confirm with user, then write back. Follow the procedure in `MajorLift/metamask-extension-skills/commands/patch.md`.
+4. Always show the diff before writing. Never silent-overwrite.
+
+## Rules inherited from the command spec
+- `origin`, `captured_by`, `captured_at` are immutable.
+- `maturity` changes require explicit confirmation.
+- Path changes are `/graduate`, not `/patch`.
