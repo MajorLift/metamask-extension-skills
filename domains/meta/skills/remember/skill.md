@@ -3,6 +3,8 @@ maturity: draft
 name: remember
 description: Capture a durable team learning. Shape the body, pick a domain, and route new-vs-edit in a single step.
 origin: drafted
+command: remember
+argument-hint: "[--domain <name>] [--edit <path>] <capture>"
 ---
 
 # /remember
