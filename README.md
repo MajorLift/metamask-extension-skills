@@ -54,12 +54,29 @@ Three skills that illustrate what passes the filter and what the method looks li
 - Any team with production errors needs this discipline; most write it down only after they have been burned by its absence.
 - [Extension overlay](domains/analytics/skills/sentry-mcp-queries/repos/metamask-extension.md).
 
+## Meta-skills
+
+Skills *about* running the skills system — capture surfaces, curation workflows, promotion criteria. They live alongside content skills in `domains/meta/` so agents consuming the bundle learn how the system works without a separate doc, and so the rules evolve through the same loop they enable.
+
+Every meta-skill invocation returns two blocks: an **Outcome** (what was written, paths + SHAs + URLs) and a conservative **Follow-ups** list (concrete action items only when warranted; empty by default). Agents consuming the output can trust silence.
+
+### [`remember`](domains/meta/skills/remember/skill.md)
+
+The capture surface. `/remember` folds three responsibilities into one invocation:
+
+1. **Capture** a durable team learning as a one-liner.
+2. **Crystallize** — shape the body (`When to use`, `Do not use when`, `Notes`) from live conversation context at the same moment. Deferring this to a later curation pass is the antipattern: the context is lost by then.
+3. **Decide new-vs-edit** — search the bundle for overlap first; amend an existing skill when one already covers the ground, create a new inbox entry only when none does.
+
+Invoked via `@metamaskbot /remember <text>` on a PR (trust-tiered: direct / PR / reject) or `node tools/remember.ts` locally. Pre-shaped bodies pass through `--body-file`; amendments through `--edit <path>`.
+
 ## Full catalog
 
 | Domain | Skills | Knowledge | Overlays |
 |---|---|---|---|
 | ai-collaboration | [`specifications-as-guardrails`](domains/ai-collaboration/skills/specifications-as-guardrails/skill.md) | — | — |
 | analytics | [`analytics-instrumentation`](domains/analytics/skills/analytics-instrumentation/skill.md), [`sentry-mcp-queries`](domains/analytics/skills/sentry-mcp-queries/skill.md) | [`metrametrics-identity`](domains/analytics/knowledge/metrametrics-identity.md), [`segment-governance`](domains/analytics/knowledge/segment-governance.md) | [ext (analytics-instrumentation)](domains/analytics/skills/analytics-instrumentation/repos/metamask-extension.md), [ext (sentry-mcp-queries)](domains/analytics/skills/sentry-mcp-queries/repos/metamask-extension.md) |
+| meta | [`remember`](domains/meta/skills/remember/skill.md) | — | — |
 | platform | [`extension-errors-debugging`](domains/platform/skills/extension-errors-debugging/skill.md), [`extension-lifecycle-decoupling`](domains/platform/skills/extension-lifecycle-decoupling/skill.md) | [`extension-architecture`](domains/platform/knowledge/extension-architecture.md), [`mv3-service-worker`](domains/platform/knowledge/mv3-service-worker.md) | [ext (errors)](domains/platform/skills/extension-errors-debugging/repos/metamask-extension.md) |
 | pr-workflow | [`commit-discipline`](domains/pr-workflow/skills/commit-discipline/skill.md), [`pr-description`](domains/pr-workflow/skills/pr-description/skill.md) | — | [ext (pr-description)](domains/pr-workflow/skills/pr-description/repos/metamask-extension.md) |
 | testing | [`benchmark-design`](domains/testing/skills/benchmark-design/skill.md) | — | — |
